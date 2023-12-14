@@ -12,3 +12,4 @@ List of Functions:
 "single_dipole_sim/noise" uses FieldTrip cfg to simulate dipole source inside spherical head conductor model. Can change sources, locations, noise ect using cfg options
 "multiVSHin_singleVSHout" calculates SSS expansion using multi-origin interior and single-origin exterior
 "spheroidIN_spheroidOUT/vshOUT" spheroidal interior basis with spheroidal/single-origin exterior
+"xi" iterative SSS model
