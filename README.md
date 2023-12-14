@@ -13,3 +13,6 @@ List of Functions:
 "multiVSHin_singleVSHout" calculates SSS expansion using multi-origin interior and single-origin exterior
 "spheroidIN_spheroidOUT/vshOUT" spheroidal interior basis with spheroidal/single-origin exterior
 "xi" iterative SSS model
+
+TODO
+(1) investigate ways to create noise using cfg.courcemodel and "single_dipole_sim_noise". (2) impliment iterative model for multi-sphere expansion. (3) work on testing everything with real raw data from SQUID sensors
