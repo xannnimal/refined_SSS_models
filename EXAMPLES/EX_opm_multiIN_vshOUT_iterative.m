@@ -1,5 +1,5 @@
 %% EXAMPLE: OPM sensors, multi-in, single-vsh out, iterative
-%investigate iterative SSS method on multi-origin internal basis
+%investigate iterative SSS method on multi-origin internal expansion
 
 %% constant variables 
 Lin = 8; % Truncation order of the internal VSH basis
