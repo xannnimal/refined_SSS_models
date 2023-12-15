@@ -1,8 +1,10 @@
 function X = xi(S,PHI,nm,nt,ni)
 %% from Samu Taulu
-%   "S" is the full normalized SSS basis, "PHI" is the data (a vector or a matrix)
-%   "nm" is the same as L_in
-%   "ni" equals Lout - 1
+%   "S" is the full normalized SSS basis, in and out 
+%   "PHI" is the data (a vector or a matrix)
+%   "nm" is the same as L_in -1
+%   "nt" equals Lout - 1
+%   "ni" is the number of trials or iterations
 min_change = 1e-2;
 ni_default = 10;
 
@@ -30,6 +32,7 @@ for n = 1:nm
       indices{n} = [dimv(n,1):dimv(n,2)];
    end
    pS{n} = pinv(S(:,indices{n}));
+   condition=cond(S(:,indices{n}))
 end
 if nm >= nt
    while count <= ni 
