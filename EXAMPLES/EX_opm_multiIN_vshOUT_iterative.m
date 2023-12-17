@@ -33,11 +33,11 @@ phi_0= dipole_data.trial{1,1}(:,:);
 %% iteratively reconstruct data
 %   "S" is the full normalized SSS basis, in and out
 %   "PHI" is the data (a vector or a matrix)
-%   "nm" is the same as L_in -1
+%   "nm" is the same as L_in
 %   "nt" equals Lout - 1
 %   "ni" equals number of iterations
-ni=5;
-data_rec = xi([SNin_tot,SNout],phi_0,Lin-1,Lout-1,ni);
+ni=6;
+data_rec = xi([SNin_tot,SNout],phi_0,Lin,Lout-1,ni);
 
 %% plot data to check
 %plot data from single channel

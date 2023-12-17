@@ -2,7 +2,7 @@ function X = xi(S,PHI,nm,nt,ni)
 %% from Samu Taulu
 %   "S" is the full normalized SSS basis, in and out 
 %   "PHI" is the data (a vector or a matrix)
-%   "nm" is the same as L_in -1
+%   "nm" is the same as L_in
 %   "nt" equals Lout - 1
 %   "ni" is the number of trials or iterations
 min_change = 1e-2;
