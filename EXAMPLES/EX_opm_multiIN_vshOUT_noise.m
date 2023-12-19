@@ -1,5 +1,4 @@
-%% EXAMPLE: OPM sensors, multi-in, single-vsh out, iterative
-%investigate iterative SSS method on multi-origin internal expansion
+%% EXAMPLE: OPM sensors, multi-in, single-vsh out, noisy dipole sim
 
 %% constant variables 
 Lin = 8; % Truncation order of the internal VSH basis
@@ -23,21 +22,22 @@ other_dir=theta_hat;
 %calculate multi-vsh in and single-vsh out
 [SNin_tot,SNout] = multiVSHin_singleVSHout(center1', center2',opm_matrix',R_hat',other_dir',sensing_dir',ch_types,Lin,Lout);
 
-%% generate single dipole simulated data
+%% generate single dipole simulated data with noise
 dip_pos = [0.01,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,0,1]'; %(size 3xN)
-dipole_data = single_dipole_sim(opm_matrix,sensing_dir,dip_pos,dip_mom);
+noise=5;
+dipole_data = single_dipole_sim_noise(opm_matrix,sensing_dir,dip_pos,dip_mom,noise);
 %pick a specific channel
 phi_0= dipole_data.trial{1,1}(:,:);
 
-%% iteratively reconstruct data
-%   "S" is the full normalized SSS basis, in and out
-%   "PHI" is the data (a vector or a matrix)
-%   "nm" is the same as L_in
-%   "nt" equals Lout - 1
-%   "ni" equals number of iterations
-ni=5;
-data_rec = xi([SNin_tot,SNout],phi_0,Lin,Lout-1,ni);
+%% reconstrct internal data
+pS=pinv([SNin_tot SNout]);   
+XN=pS*phi_0;
+data_rec=real(SNin_tot*XN(1:size(SNin_tot,2),:)); 
+%check condition numbers
+condition_in = cond(SNin_tot);
+condition_out= cond(SNout);
+condition_both = cond([SNin_tot SNout]);
 
 %% plot data to check
 %plot data from single channel
@@ -49,12 +49,10 @@ figure(2);
 hold on;
 plot(data_time(:,1:100), data_chan_num(:,1:100))
 plot(data_time(:,1:100),data_rec(chan_num,1:100))
-title('Two-Origin SSS iterative, Channel 1, Sandia Helmet phi, dipole 1cm x')
+title('Two-Origin SSS, Channel 1, Sandia Helmet phi, dipole 1cm x')
 xlabel('time')
 ylabel('MEG0121')
 %ylim([-8e-12 8e-12])
 legend({'Raw Data','Reconstructed'},'location','northwest')
 hold off
-
-
 

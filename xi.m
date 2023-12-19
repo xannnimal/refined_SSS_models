@@ -32,8 +32,9 @@ for n = 1:nm
       indices{n} = [dimv(n,1):dimv(n,2)];
    end
    pS{n} = pinv(S(:,indices{n}));
-   condition=cond(S(:,indices{n}))
 end
+condition_Lin=cond(S(:,nm))
+condition_tot=cond(S)
 if nm >= nt
    while count <= ni 
       for i = 1:nm
