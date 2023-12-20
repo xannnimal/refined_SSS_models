@@ -5,8 +5,8 @@ function dipole_data = single_dipole_sim_noise(opm_matrix,sensing_dir,dip_pos,di
 %   sensing_dir: nchanx3 matrix of coilpos for sensing, R theta or phi hat
 %   dip_pos: [Rx Ry Rz] size Nx3 position of dipole
 %   dip_mom: [Qx Qy Qz] size 3xN moment of dipole
-%   cfg.relnoise (1e-4)    = add noise with level relative to data signal
-%   cfg.absnoise    = add noise with absolute level
+%   cfg.relnoise (1e-4)    = add noise= relnoise#*rms of data
+%   cfg.absnoise    = add noise with absolute level = absnoise#
 %   cfg.randomseed  = 'yes' or a number or vector with the seed value (default = 'yes')
 
 % specify grad
@@ -27,6 +27,7 @@ cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
 cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
 cfg.sourcemodel.unit       = 'm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
 cfg.relnoise = noise;
+cfg.randomseed             = 1; %set for reprodicibility 
 cfg.headmodel     = vol; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
 cfg.grad          = grad; %structure with gradiometer definition or filename, see FT_READ_SENS
 

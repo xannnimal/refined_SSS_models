@@ -25,7 +25,7 @@ other_dir=theta_hat;
 %% generate single dipole simulated data with noise
 dip_pos = [0.01,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,0,1]'; %(size 3xN)
-noise=5;
+noise=1e-2;
 dipole_data = single_dipole_sim_noise(opm_matrix,sensing_dir,dip_pos,dip_mom,noise);
 %pick a specific channel
 phi_0= dipole_data.trial{1,1}(:,:);
@@ -49,10 +49,31 @@ figure(2);
 hold on;
 plot(data_time(:,1:100), data_chan_num(:,1:100))
 plot(data_time(:,1:100),data_rec(chan_num,1:100))
-title('Two-Origin SSS, Channel 1, Sandia Helmet phi, dipole 1cm x')
+title('Two-Origin SSS, Sandia Helmet phi, dipole 1cm x noise')
 xlabel('time')
 ylabel('MEG0121')
 %ylim([-8e-12 8e-12])
 legend({'Raw Data','Reconstructed'},'location','northwest')
 hold off
+
+%% compare with iterative
+%   "S" is the full normalized SSS basis, in and out
+%   "PHI" is the data (a vector or a matrix)
+%   "nm" is the same as L_in
+%   "nt" equals Lout - 1
+%   "ni" equals number of iterations
+ni=5;
+data_rec2 = xi([SNin_tot,SNout],phi_0,Lin,Lout-1,ni);
+
+figure(3);
+hold on;
+plot(data_time(:,1:100), data_chan_num(:,1:100))
+plot(data_time(:,1:100),data_rec2(chan_num,1:100))
+title('Two-Origin SSS iterative, Sandia Helmet phi, dipole noise')
+xlabel('time')
+ylabel('MEG0121')
+%ylim([-8e-12 8e-12])
+legend({'Raw Data','Reconstructed'},'location','northwest')
+hold off
+
 

@@ -1,5 +1,5 @@
 %% EXAMPLE: OPM sensors, spheroid-in, single-vsh out
-
+clear
 %% constant variables regardless
 Lin = 8; % Truncation order of the internal VSH basis
 Lout = 3; % Truncation order of the external VSH basis
@@ -14,8 +14,12 @@ filename="headwithsensors1.mat";
 %speficy sensing direction. SQUID=R_hat or EZ, OPM=Theta or phi hat
 sensing_dir=phi_hat;
 other_dir=theta_hat;
-semi_major=12; %need to check if these are reasonable values
-semi_minor=10;
+%find major and minor axis of spheroidal ellipse
+%Y must be the longest axis of opm_matrix
+new_opm(:,1)=opm_matrix(:,1);
+new_opm(:,2)=opm_matrix(:,3);
+new_opm(:,3)=opm_matrix(:,2);
+[semi_major,semi_minor]=find_ellipse_axis(new_opm);
 %calculate spheroidal in and single-vsh out
 [SNin_spm,SNout] = spheroidIN_vshOUT(opm_matrix,R_hat,other_dir,sensing_dir,semi_major,semi_minor,Lin,Lout,ch_types);
 
