@@ -17,8 +17,8 @@ other_dir=theta_hat;
 %find major and minor axis of spheroidal ellipse
 %Y must be the longest axis of opm_matrix
 new_opm(:,1)=opm_matrix(:,1);
-new_opm(:,2)=opm_matrix(:,3);
-new_opm(:,3)=opm_matrix(:,2);
+new_opm(:,2)=opm_matrix(:,2);
+new_opm(:,3)=opm_matrix(:,3);
 [semi_major,semi_minor]=find_ellipse_axis(new_opm);
 %calculate spheroidal in and single-vsh out
 [SNin_spm,SNout] = spheroidIN_vshOUT(opm_matrix,R_hat,other_dir,sensing_dir,semi_major,semi_minor,Lin,Lout,ch_types);

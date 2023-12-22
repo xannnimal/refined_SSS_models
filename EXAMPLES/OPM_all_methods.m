@@ -27,7 +27,7 @@ end
 semi_major=max(r);
 semi_minor=min(r);
 semi_major=0.11;
-semi_minor=0.09;
+semi_minor=0.085;
 %calculate multi-vsh in and single-vsh out
 [SNin_tot,SNout] = multiVSHin_singleVSHout(center1', center2',opm_matrix',R_hat',other_dir',sensing_dir',ch_types,Lin,Lout);
 [Sin_spm,Sout_spm] = spheroidIN_spheroidOUT(opm_matrix,R_hat,other_dir,sensing_dir,semi_major,semi_minor,Lin,Lout);

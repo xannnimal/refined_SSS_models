@@ -33,9 +33,20 @@ semi_minor=0.09;
 %% generate single dipole simulated data
 dip_pos = [0.01,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,0,1]'; %(size 3xN)
+
+% for multiple dipoles
+% dip_pos = [
+%    0  0.5 0.3          % dipole 1
+%    0 -0.5 0.3          % dipole 2
+%    ];
+% dip_mom = ...       % the vector represents [qx1 qy1 qz1 qx2 qy2 qz2]
+%   [ 1 0 0 0 0 0 ]' + ...% this is how signal1 contributes to the 6 dipole components
+%   [ 0 0 0 1 0 0 ]';     % this is how signal2 contributes
+
 dipole_data = single_dipole_sim(R_mag',EZ_mag',dip_pos,dip_mom);
 %pick a specific channel
 phi_0= dipole_data.trial{1,1}(:,:);
+
 
 %% reconstrct internal data
 %multi in, vsh out
