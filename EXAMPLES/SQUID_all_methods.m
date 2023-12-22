@@ -1,4 +1,4 @@
-%% OPM with all recons
+%% SQUID with all recons
 clear
 %% constant variables 
 Lin = 8; % Truncation order of the internal VSH basis
@@ -11,31 +11,29 @@ center1 = center1 - [0,0,0.05];
 center2 = center2 - [0,0,0.05];
 
 %% opm geometry from Peter at SANDIA
-filename="headwithsensors1.mat";
-%generate helmet pos and ori with "gen_opm_geometry"
-[opm_matrix,R_hat,theta_hat,phi_hat,ch_types] = gen_opm_geometry(filename);
-
+%% generate SQUID magnetometers
+coordsys = 'device'; 
+rawfile = "sample_audvis_raw.fif";
+[R_mag,EX_mag,EY_mag,EZ_mag,ch_types] = gen_squid_geometry(rawfile, coordsys);
+RT_mag=R_mag';
 %% SSS expansions- multi origin interior
-%speficy sensing direction. SQUID=R_hat or EZ, OPM=Theta or phi hat
-sensing_dir=phi_hat;
-other_dir=theta_hat;
 %find semi major and minor
 %[semi_major,semi_minor]=find_ellipse_axis(opm_matrix);
-for i=(1:size(opm_matrix,1))
-    r(i)=sqrt(opm_matrix(i,1)^2+ opm_matrix(i,2)^2+ opm_matrix(i,3)^2);
+for i=(1:size(RT_mag,1))
+    r(i)=sqrt(RT_mag(i,1)^2+ RT_mag(i,2)^2+ RT_mag(i,3)^2);
 end
 semi_major=max(r);
 semi_minor=min(r);
 semi_major=0.11;
 semi_minor=0.09;
 %calculate multi-vsh in and single-vsh out
-[SNin_tot,SNout] = multiVSHin_singleVSHout(center1', center2',opm_matrix',R_hat',other_dir',sensing_dir',ch_types,Lin,Lout);
-[Sin_spm,Sout_spm] = spheroidIN_spheroidOUT(opm_matrix,R_hat,other_dir,sensing_dir,semi_major,semi_minor,Lin,Lout);
+[SNin_tot,SNout] = multiVSHin_singleVSHout(center1', center2',R_mag,EX_mag,EY_mag,EZ_mag,ch_types,Lin,Lout);
+[Sin_spm,Sout_spm] = spheroidIN_spheroidOUT(R_mag',EX_mag',EY_mag',EZ_mag',semi_major,semi_minor,Lin,Lout);
 
 %% generate single dipole simulated data
 dip_pos = [0.01,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,0,1]'; %(size 3xN)
-dipole_data = single_dipole_sim(opm_matrix,sensing_dir,dip_pos,dip_mom);
+dipole_data = single_dipole_sim(R_mag',EZ_mag',dip_pos,dip_mom);
 %pick a specific channel
 phi_0= dipole_data.trial{1,1}(:,:);
 
@@ -74,7 +72,7 @@ plot(data_time(:,1:100), data_chan_num(:,1:100))
 plot(data_time(:,1:100),data_rec_multi_vsh(chan_num,1:100))
 plot(data_time(:,1:100),data_rec_sph_sph(chan_num,1:100))
 plot(data_time(:,1:100),data_rec_sph_vsh(chan_num,1:100))
-title('All SSS Methods, Channel 1, Sandia Helmet phi, dipole 1cm x')
+title('All SSS Methods, Channel 1, SQUID, dipole 1cm x')
 xlabel('time')
 ylabel('MEG0121')
 %ylim([-8e-12 8e-12])
