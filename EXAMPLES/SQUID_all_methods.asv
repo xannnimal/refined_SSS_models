@@ -50,11 +50,10 @@ phi_0= dipole_data.trial{1,1}(:,:);
 
 %% reconstrct internal data
 %single in, single out
-[Sin,SNin] = Sin_vsh_vv([0,0,0]',R_mag,EX_mag,EY_mag,EZ_mag,ch_types,Lin);
-[Sout,SNout] = Sout_vsh_vv([0,0,0]',R_mag,EX_mag,EY_mag,EZ_mag,ch_types,Lout);
+[Sin,SNin] = Sin_vsh_vv([0,0,0]',opm_matrix',R_hat',theta_hat',phi_hat',ch_types,Lin);
+[Sout,SNout] = Sout_vsh_vv([0,0,0]',opm_matrix',R_hat',theta_hat',phi_hat',ch_types,Lout);
 pS=pinv([SNin SNout]);
 XN=pS*phi_0;
-data_rec_vsh=real(SNin*XN(1:size(SNin,2),:));
 %multi in, vsh out
 pS_multi_vsh=pinv([SNin_tot SNout]);   
 XN_multi_vsh=pS_multi_vsh*phi_0;
@@ -69,8 +68,6 @@ XN_sph_vsh=pS_sph_vsh*phi_0;
 data_rec_sph_vsh=real(Sin_spm*XN_sph_vsh(1:size(Sin_spm,2),:));
 
 %check condition numbers
-cond_vsh_vsh=cond([SNin SNout]);
-cond_SNin=cond(SNin);
 cond_SNin_tot = cond(SNin_tot);
 cond_SNout= cond(SNout);
 condition_multi_vsh = cond([SNin_tot SNout]);
@@ -78,13 +75,6 @@ cond_SNin_spm=cond(Sin_spm);
 cond_SNout_spm= cond(Sout_spm);
 condition_sph_sph = cond([Sin_spm Sout_spm]);
 condition_sph_vsh = cond([Sin_spm SNout]);
-
-%calculate the subspace angle between the reconstructed and noiseless original data for one time instant
-time=10;
-sub_multi_vsh=subspace(phi_0(:,time),data_rec_multi_vsh(:,time))*180/pi;
-sub_sph_sph=subspace(phi_0(:,time),data_rec_sph_sph(:,time))*180/pi;
-sub_sph_vsh=subspace(phi_0(:,time),data_rec_sph_vsh(:,time))*180/pi;
-sub_vsh_vsh=subspace(phi_0(:,time),data_rec_vsh(:,time))*180/pi;
 
 %% plot data to check
 %plot data from single channel
@@ -95,14 +85,13 @@ data_chan_num=dipole_data.trial{1,1}(chan_num,:);
 figure(2);
 hold on;
 plot(data_time(:,1:100), data_chan_num(:,1:100))
-plot(data_time(:,1:100),data_rec_vsh(chan_num,1:100))
 plot(data_time(:,1:100),data_rec_multi_vsh(chan_num,1:100))
 plot(data_time(:,1:100),data_rec_sph_sph(chan_num,1:100))
 plot(data_time(:,1:100),data_rec_sph_vsh(chan_num,1:100))
-title('All SSS Methods, Channel 1, Sandia Helmet phi, dipole 1cm x')
+title('All SSS Methods, Channel 1, SQUID, dipole 1cm x')
 xlabel('time')
 ylabel('MEG0121')
 %ylim([-8e-12 8e-12])
-legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+legend({'Raw Data','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
 hold off
 
