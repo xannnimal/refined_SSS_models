@@ -17,20 +17,20 @@ filename="headwithsensors1.mat";
 
 %% SSS expansions- phi
 %speficy sensing direction. SQUID=R_hat or EZ, OPM=Theta or phi hat
-%find semi major and minor
-%[semi_major,semi_minor,origin]=find_ellipse_axis(new_opm);
-
-% for i=(1:size(opm_matrix,1))
-%     r(i)=sqrt(opm_matrix(i,1)^2+ opm_matrix(i,2)^2+ opm_matrix(i,3)^2);
-% end
-% semi_major=max(r);
-% semi_minor=min(r);
-semi_major=0.11;
-semi_minor=0.095;
-origin= [-4.385348680088250e-18;-0.008966789246483;0.016211250026356];
 %calculate multi-vsh in and single-vsh out
 [SNin_tot_p,SNout_p] = multiVSHin_singleVSHout(center1', center2',opm_matrix',R_hat',theta_hat',phi_hat',ch_types,Lin,Lout);
-[Sin_spm_p,Sout_spm_p] = spheroidIN_spheroidOUT(opm_matrix,R_hat,theta_hat,phi_hat,origin,semi_major,semi_minor,Lin,Lout);
+
+%calculate spheroidal in/out
+%find semi major and minor- code assumes mm so change units
+opm_matrix_mm = opm_matrix*1000;
+R_hat_mm = R_hat*1000;
+theta_hat_mm = theta_hat*1000;
+phi_hat_mm = phi_hat*1000;
+[semi_major_mm,semi_minor_mm,origin_mm]=find_ellipse_axis(opm_matrix_mm);
+[Sin_spm_p_mm,Sout_spm_p_mm] = spheroidIN_spheroidOUT(opm_matrix_mm,R_hat_mm,theta_hat_mm,phi_hat_mm,origin_mm,semi_major_mm,semi_minor_mm,Lin,Lout);
+%scale back to m
+Sin_spm_p = Sin_spm_p_mm/1000;
+Sout_spm_p = Sout_spm_p_mm/1000;
 
 %% generate single dipole simulated data
 dip_pos = [0.01,0,0]; %[Rx Ry Rz] (size Nx3)
@@ -107,7 +107,10 @@ hold off
 %% compare with theta as sensing dir, mVSH
 %calculate multi-vsh in and single-vsh out
 [SNin_tot_t,SNout_t] = multiVSHin_singleVSHout(center1', center2',opm_matrix',R_hat',phi_hat',theta_hat',ch_types,Lin,Lout);
-[Sin_spm_t,Sout_spm_t] = spheroidIN_spheroidOUT(opm_matrix,R_hat,phi_hat,theta_hat,origin,semi_major,semi_minor,Lin,Lout);
+[Sin_spm_t_mm,Sout_spm_t_mm] = spheroidIN_spheroidOUT(opm_matrix_mm,R_hat_mm,phi_hat_mm,theta_hat_mm,origin_mm,semi_major_mm,semi_minor_mm,Lin,Lout);
+Sin_spm_t = Sin_spm_t_mm/1000;
+Sout_spm_t = Sout_spm_t_mm/1000;
+
 
 %% generate single dipole simulated data
 dip_pos = [0.01,0,0]; %[Rx Ry Rz] (size Nx3)
@@ -174,7 +177,7 @@ plot(data_time_t(:,1:100),data_rec_sph_vsh_t(chan_num,1:100))
 title('All SSS Methods, Channel 1, Sandia Helmet Theta, dipole 1cm x')
 xlabel('time')
 ylabel('MEG0121')
-%ylim([-8e-12 8e-12])
+ylim([-1e-6 1e-6])
 %legend({'Raw Data','VSH/VSH','Spm/Spm'},'location','northwest')
 legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
 hold off
