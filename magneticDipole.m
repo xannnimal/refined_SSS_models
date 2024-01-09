@@ -11,10 +11,5 @@ for i=(1:size(chanpos,1))
 end
 %calculate B for each channel position
 for i=(1:size(chanpos,1))
-    magneticField_i = mu0/(4*pi)*(1/r(i))*(3*(dot(dip_mom,rhat)*rhat-dip_mom));
-    magneticField(i,:)=magneticField_i;
+    magneticField(i,:) = mu0/(4*pi)*(1/r(i))*(3*(dot(dip_mom,rhat)*rhat-dip_mom));
 end
-
-% mag_r = norm(r); % magnitude of r vector
-% rhat = r/mag_r; % unit vector of r vector
-% magneticField = (mu0/(4*pi*mag_r^3))*(3*(dot(m,rhat)*rhat-m));
