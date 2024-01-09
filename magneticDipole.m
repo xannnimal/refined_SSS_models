@@ -1,4 +1,4 @@
-function magneticField = magneticDipole(chanpos,dip_pos,dip_mom)
+function magneticField = magneticDipole(chanpos,dip_pos, dip_mom)
 %Calculating the magnetic field from a dipole using Griffiths EM eq. 5.89
 % dip_mom: magnetic moment 1x3
 % dip_pos: position vector, from the center of the magnetic dipole to where the magnetic field is measured
@@ -18,5 +18,3 @@ end
 % mag_r = norm(r); % magnitude of r vector
 % rhat = r/mag_r; % unit vector of r vector
 % magneticField = (mu0/(4*pi*mag_r^3))*(3*(dot(m,rhat)*rhat-m));
-
-end
