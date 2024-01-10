@@ -33,7 +33,7 @@ Sin_spm_p = Sin_spm_p_mm/1000;
 Sout_spm_p = Sout_spm_p_mm/1000;
 
 %% generate single dipole simulated data
-dip_pos = [0.01,0,0]; %[Rx Ry Rz] (size Nx3)
+dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,0,1]; %(size 3xN)
 dipole_data_p = single_dipole_sim(opm_matrix,phi_hat,dip_pos,dip_mom);
 %pick a specific channel
@@ -41,20 +41,25 @@ phi_0p= dipole_data_p.trial{1,1}(:,:);
 %calculate B field
 magneticField = magneticDipole(opm_matrix,dip_pos,dip_mom);
 
-return
+
 %% reconstrct internal data
 %single in, single out
 [Sin_p,SNin_p] = Sin_vsh_vv([0,0,0]',opm_matrix',R_hat',theta_hat',phi_hat',ch_types,Lin);
 [Sout_p,SNout_p] = Sout_vsh_vv([0,0,0]',opm_matrix',R_hat',theta_hat',phi_hat',ch_types,Lout);
 pS_p=pinv([SNin_p SNout_p]);
-XN_p=pS_p*phi_0p;t
+XN_p=pS_p*phi_0p;
 data_rec_vsh_p=real(SNin_p*XN_p(1:size(SNin_p,2),:));
+
+% XN_p=pS_p*magneticField;
+% data_rec_vsh_p=real(SNin_p*XN_p(1:size(SNin_p,2),:));
+% check=subspace(data_rec_vsh_p,magneticField)*180/pi;
+
 %multi in, vsh out
 pS_multi_vsh_p=pinv([SNin_tot_p SNout_p]);   
 XN_multi_vsh_p=pS_multi_vsh_p*phi_0p;
 data_rec_multi_vsh_p=real(SNin_tot_p*XN_multi_vsh_p(1:size(SNin_tot_p,2),:)); 
 %spheroidal in, spheroidal out
-pS_sph_sph_p=pinv([Sin_spm_p Sout_spm_p]);   
+pS_sph_sph_p=pinv(Sin_spm_p);   
 XN_sph_sph_p=pS_sph_sph_p*phi_0p;
 data_rec_sph_sph_p=real(Sin_spm_p*XN_sph_sph_p(1:size(Sin_spm_p,2),:)); 
 %spheroidal in, single vsh out
@@ -62,6 +67,12 @@ pS_sph_vsh_p=pinv([Sin_spm_p SNout_p]);
 XN_sph_vsh_p=pS_sph_vsh_p*phi_0p;
 data_rec_sph_vsh_p=real(Sin_spm_p*XN_sph_vsh_p(1:size(Sin_spm_p,2),:));
 
+check_data = subspace(phi_0p, Sin_spm_p)*180/pi;
+check_data2 = subspace(phi_0p, data_rec_sph_sph_p)*180/pi;
+check_data_multi = subspace(phi_0p, SNin_tot_p)*180/pi;
+check_data_single = subspace(phi_0p, SNin_p)*180/pi;
+
+return
 %check condition numbers
 cond_vsh_vsh_p=cond([SNin_p SNout_p]);
 cond_SNin_p=cond(SNin_p);
