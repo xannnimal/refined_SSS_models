@@ -14,24 +14,58 @@ center2 = center2 - [0,0,0.05];
 %% generate SQUID magnetometers
 coordsys = 'device'; 
 rawfile = "sample_audvis_raw.fif";
-[R_mag,EX_mag,EY_mag,EZ_mag,ch_types] = gen_squid_geometry(rawfile, coordsys);
-RT_mag=R_mag';
+
+%for 102 magnetometers, run this
+% [R_mag,EX_mag,EY_mag,EZ_mag,ch_types] = gen_squid_geometry(rawfile, coordsys);
+% RT_mag=R_mag';
+%ch_types = ones(size(EXT_mag,1),1);
+
+%for 306 channels, run this
+[R_mag,EX_mag,EY_mag,EZ_mag] = fiff_getpos(rawfile,coordsys);
+RT_mag=transpose(R_mag);
+EXT_mag=transpose(EX_mag);
+EYT_mag=transpose(EY_mag);
+EZT_mag=transpose(EZ_mag);
+for i=(1:size(EXT_mag,1))
+    if mod(i,3)==0 %every third is a magnetometer
+        ch_types(i)=1;
+    else
+        ch_types(i)=0;
+    end
+end
+
+
 %% SSS expansions- multi origin interior
 %find semi major and minor
-%[semi_major,semi_minor]=find_ellipse_axis(opm_matrix);
-for i=(1:size(RT_mag,1))
-    r(i)=sqrt(RT_mag(i,1)^2+ RT_mag(i,2)^2+ RT_mag(i,3)^2);
+%calculate spheroidal in/out
+%find semi major and minor- code assumes mm so change units
+R_mag_mm = R_mag*1000;
+EZ_mag_mm = EZ_mag*1000;
+EX_mag_mm = EX_mag*1000;
+EY_mag_mm = EY_mag*1000;
+[semi_major_mm,semi_minor_mm,origin_mm]=find_ellipse_axis(R_mag_mm');
+[Sin_spm_p_mm,Sout_spm_p_mm] = spheroidIN_spheroidOUT(R_mag_mm',EX_mag_mm',EX_mag_mm',EZ_mag_mm',origin_mm,semi_major_mm,semi_minor_mm,Lin,Lout);
+
+for j = 1:size(Sin_spm_p_mm,2)
+  SNin_spm_p_mm(:,j) = Sin_spm_p_mm(:,j)/norm(Sin_spm_p_mm(:,j));
 end
-semi_major=max(r);
-semi_minor=min(r);
-semi_major=0.11;
-semi_minor=0.09;
+
+for j = 1:size(Sout_spm_p_mm,2)
+  SNout_spm_p_mm(:,j) = Sout_spm_p_mm(:,j)/norm(Sout_spm_p_mm(:,j));
+end
+
+
+%scale back to m
+Sin_spm = SNin_spm_p_mm;
+Sout_spm = SNout_spm_p_mm;
 %calculate multi-vsh in and single-vsh out
 [SNin_tot,SNout] = multiVSHin_singleVSHout(center1', center2',R_mag,EX_mag,EY_mag,EZ_mag,ch_types,Lin,Lout);
-[Sin_spm,Sout_spm] = spheroidIN_spheroidOUT(R_mag',EX_mag',EY_mag',EZ_mag',semi_major,semi_minor,Lin,Lout);
+%calculate single in/out
+[Sin,SNin] = Sin_vsh_vv([0,0,0]',R_mag,EX_mag,EY_mag,EZ_mag,ch_types,Lin);
+[Sout,SNout] = Sout_vsh_vv([0,0,0]',R_mag,EX_mag,EY_mag,EZ_mag,ch_types,Lout);
 
 %% generate single dipole simulated data
-dip_pos = [0.01,0,0]; %[Rx Ry Rz] (size Nx3)
+dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,0,1]'; %(size 3xN)
 
 % for multiple dipoles
@@ -50,8 +84,6 @@ phi_0= dipole_data.trial{1,1}(:,:);
 
 %% reconstrct internal data
 %single in, single out
-[Sin,SNin] = Sin_vsh_vv([0,0,0]',R_mag,EX_mag,EY_mag,EZ_mag,ch_types,Lin);
-[Sout,SNout] = Sout_vsh_vv([0,0,0]',R_mag,EX_mag,EY_mag,EZ_mag,ch_types,Lout);
 pS=pinv([SNin SNout]);
 XN=pS*phi_0;
 data_rec_vsh=real(SNin*XN(1:size(SNin,2),:));
@@ -105,4 +137,61 @@ ylabel('MEG0121')
 %ylim([-8e-12 8e-12])
 legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
 hold off
+
+%% subsapce angles
+sVSH_sVSH_t=[SNin SNout];
+mVSH_sVSH_t=[SNin_tot SNout];
+oid_oid_t=[Sin_spm,Sout_spm];
+oid_sVSH_t=[Sin_spm,SNout];
+for i=(1:80)
+    %mVSH In and Spheroid In
+    angles_mVSH_oid_t(i)=subspace(SNin_tot(:,i),Sin_spm)*180/pi;
+%sVSH/sVSH and mVSH/sVSH 
+    angles_sVSHsVSH_mVSHsVSH_t(i)=subspace(sVSH_sVSH_t(:,i),mVSH_sVSH_t)*180/pi;
+%sVSH/sVSH and Spheroid/Spheroid 
+    angles_sVSHsVSH_oidoid_t(i)=subspace(sVSH_sVSH_t(:,i),oid_oid_t)*180/pi;
+%sVSH/sVSH and Spheroid/sVSH 
+    angles_sVSHsVSH_oidsVSH_t(i)=subspace(sVSH_sVSH_t(:,i),oid_sVSH_t)*180/pi;
+%mVSH/sVSH and Spheroid/Spheroid  
+    angles_mVSHsVSH_oidoid_t(i)=subspace(mVSH_sVSH_t(:,i),oid_oid_t)*180/pi;
+%mVSH/sVSH and Spheroid/sVSH
+    angles_mVSHsVSH_oidsVSH_t(i)=subspace(mVSH_sVSH_t(:,i),oid_sVSH_t)*180/pi;
+%Spheroid/Spheroid and Spheroid/sVSH
+    angles_oidoid_oidsVSH_t(i)=subspace(oid_oid_t(:,i),oid_sVSH_t)*180/pi;
+end
+
+%find min/max/average
+%mVSH In and Spheroid In
+max_mVSH_oid_t=max(angles_mVSH_oid_t);
+min_mVSH_oid_t=min(angles_mVSH_oid_t);
+av_mVSH_oid_t=mean(angles_mVSH_oid_t);
+%sVSH/sVSH and mVSH/sVSH 
+max_sVSHsVSH_mVSHsVSH_t = max(angles_sVSHsVSH_mVSHsVSH_t);
+min_sVSHsVSH_mVSHsVSH_t = min(angles_sVSHsVSH_mVSHsVSH_t);
+av_sVSHsVSH_mVSHsVSH_t = mean(angles_sVSHsVSH_mVSHsVSH_t);
+%sVSH/sVSH and Spheroid/Spheroid 
+max_sVSHsVSH_oidoid_t = max(angles_sVSHsVSH_oidoid_t);
+min_sVSHsVSH_oidoid_t = min(angles_sVSHsVSH_oidoid_t);
+av_sVSHsVSH_oidoid_t = mean(angles_sVSHsVSH_oidoid_t);
+%sVSH/sVSH and Spheroid/sVSH 
+max_sVSHsVSH_oidsVSH_t = max(angles_sVSHsVSH_oidsVSH_t);
+min_sVSHsVSH_oidsVSH_t = min(angles_sVSHsVSH_oidsVSH_t);
+av_sVSHsVSH_oidsVSH_t = mean(angles_sVSHsVSH_oidsVSH_t);
+%mVSH/sVSH and Spheroid/Spheroid  
+max_mVSHsVSH_oidoid_t = max(angles_mVSHsVSH_oidoid_t);
+min_mVSHsVSH_oidoid_t = min(angles_mVSHsVSH_oidoid_t);
+av_mVSHsVSH_oidoid_t = mean(angles_mVSHsVSH_oidoid_t);
+
+%mVSH/sVSH and Spheroid/sVSH
+max_mVSHsVSH_oidsVSH_t = max(angles_mVSHsVSH_oidsVSH_t);
+min_mVSHsVSH_oidsVSH_t = min(angles_mVSHsVSH_oidsVSH_t);
+av_mVSHsVSH_oidsVSH_t = mean(angles_mVSHsVSH_oidsVSH_t);
+
+%Spheroid/Spheroid and Spheroid/sVSH
+max_oidoid_oidsVSH_t = max(angles_oidoid_oidsVSH_t);
+min_oidoid_oidsVSH_t = min(angles_oidoid_oidsVSH_t);
+av_oidoid_oidsVSH_t = mean(angles_oidoid_oidsVSH_t);
+
+
+
 

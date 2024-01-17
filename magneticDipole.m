@@ -14,4 +14,6 @@ end
 for i=(1:size(chanpos,1))
     magneticField(i,:) = mu0/(4*pi)*(1/(r(i)^3))*(3*(dot(dip_mom,rhat)*rhat-dip_mom));
 end
+
+%project the Bfield into sensor direction, coilpos rhat
 end

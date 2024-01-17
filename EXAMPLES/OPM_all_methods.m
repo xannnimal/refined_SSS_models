@@ -40,6 +40,7 @@ dip_mom = [0,0,1]; %(size 3xN)
 %phi_0p= dipole_data_p.trial{1,1}(:,:);
 %calculate B field
 phi_0p = magneticDipole(opm_matrix,dip_pos,dip_mom);
+%data_current = current_dipole(opm_matrix,dip_pos,dip_mom);
 
 
 %% reconstrct internal data
@@ -163,7 +164,7 @@ condition_sph_vsh_t = cond([Sin_spm_t SNout_t]);
 check_data_spmt = subspace(phi_0t,Sin_spm_t)*180/pi;
 check_data_multit = subspace(phi_0t,SNin_tot_t)*180/pi;
 
-return
+
 %calculate the subspace angle between the reconstructed and noiseless original data for one time instant
 % time=10;
 % sub_multi_vsh_t=subspace(phi_0t(:,time),data_rec_multi_vsh_t(:,time))*180/pi;
@@ -179,20 +180,20 @@ return
 %data_time_t=dipole_data_t.time{1,1};
 %data_chan_num_t=dipole_data_t.trial{1,1}(chan_num,:); 
 
-figure(3);
-hold on;
-plot(data_time_t(:,1:100), phi_0p(:,1:100))
-plot(data_time_t(:,1:100),data_rec_vsh_t(chan_num,1:100))
-plot(data_time_t(:,1:100),data_rec_multi_vsh_t(chan_num,1:100))
-plot(data_time_t(:,1:100),data_rec_sph_sph_t(chan_num,1:100))
-plot(data_time_t(:,1:100),data_rec_sph_vsh_t(chan_num,1:100))
-title('All SSS Methods, Channel 1, Sandia Helmet Theta, dipole 1cm x')
-xlabel('time')
-ylabel('MEG0121')
-ylim([-1e-7 1e-7])
-%legend({'Raw Data','VSH/VSH','Spm/Spm'},'location','northwest')
-legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
-hold off
+% figure(3);
+% hold on;
+% plot(data_time_t(:,1:100), phi_0p(:,1:100))
+% plot(data_time_t(:,1:100),data_rec_vsh_t(chan_num,1:100))
+% plot(data_time_t(:,1:100),data_rec_multi_vsh_t(chan_num,1:100))
+% plot(data_time_t(:,1:100),data_rec_sph_sph_t(chan_num,1:100))
+% plot(data_time_t(:,1:100),data_rec_sph_vsh_t(chan_num,1:100))
+% title('All SSS Methods, Channel 1, Sandia Helmet Theta, dipole 1cm x')
+% xlabel('time')
+% ylabel('MEG0121')
+% ylim([-1e-7 1e-7])
+% %legend({'Raw Data','VSH/VSH','Spm/Spm'},'location','northwest')
+% legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+% hold off
 
 
 %% compare sig values
