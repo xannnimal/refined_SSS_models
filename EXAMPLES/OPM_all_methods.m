@@ -63,9 +63,11 @@ pS_sph_vsh_p=pinv([SNin_spm_p SNout_p]);
 XN_sph_vsh_p=pS_sph_vsh_p*phi_0p;
 data_rec_sph_vsh_p=real(SNin_spm_p*XN_sph_vsh_p(1:size(SNin_spm_p,2),:));
 
-check_data_oidin_p = subspace(phi_0p, SNin_spm_p)*180/pi;
-check_data_multi_p = subspace(phi_0p, SNin_tot_p)*180/pi;
-check_data_single_p = subspace(phi_0p, SNin_p)*180/pi;
+% check_data_oidin_p = subspace(phi_0p, SNin_spm_p)*180/pi;
+% check_data_multi_p = subspace(phi_0p, SNin_tot_p)*180/pi;
+% check_data_single_p = subspace(phi_0p, SNin_p)*180/pi;
+
+
 
 %check condition numbers
 cond_vsh_vsh_p=cond([SNin_p SNout_p]);
@@ -165,9 +167,10 @@ cond_SNout_spm_t= cond(Sout_spm_t);
 condition_sph_sph_t = cond([SNin_spm_t SNout_spm_t]);
 condition_sph_vsh_t = cond([SNin_spm_t SNout_t]);
 
-check_data_oidin_t = subspace(phi_0t, SNin_spm_t)*180/pi;
-check_data_multi_t = subspace(phi_0t, SNin_tot_t)*180/pi;
-check_data_single_t = subspace(phi_0t, SNin_t)*180/pi;
+% check_data_oidin_t = subspace(phi_0t, SNin_spm_t)*180/pi;
+% check_data_multi_t = subspace(phi_0t, SNin_tot_t)*180/pi;
+% check_data_single_t = subspace(phi_0t, SNin_t)*180/pi;
+
 
 
 %calculate the subspace angle between the reconstructed and noiseless original data for one time instant
@@ -216,6 +219,8 @@ hold off
 % cond_SNin_tot_p_check = max(sig_p)/sig_p(81,1);
 % cond_SNin_tot_t_check = max(sig_t)/min(sig_t);
 
+
+
 %% calculate subspace angles between bases
 % do the collumns of one basis compared to the collumns of the other 
 %theta
@@ -228,6 +233,17 @@ sVSH_sVSH_p=[SNin_p SNout_p];
 mVSH_sVSH_p=[SNin_tot_p SNout_p];
 oid_oid_p=[Sin_spm_p,Sout_spm_p];
 oid_sVSH_p=[Sin_spm_p,SNout_p];
+
+%% compare data reconstructions
+check_data_vsh_vsh_t = subspace(phi_0t, sVSH_sVSH_t)*180/pi;
+check_data_mvsh_vsh_t = subspace(phi_0t, mVSH_sVSH_t)*180/pi;
+check_data_oid_oid_t = subspace(phi_0t, oid_oid_t)*180/pi;
+check_data_oid_vsh_t = subspace(phi_0t, oid_sVSH_t)*180/pi;
+
+check_data_vsh_vsh_p = subspace(phi_0p, sVSH_sVSH_p)*180/pi;
+check_data_mvsh_vsh_p = subspace(phi_0p, mVSH_sVSH_p)*180/pi;
+check_data_oid_oid_p = subspace(phi_0p, oid_oid_p)*180/pi;
+check_data_oid_vsh_p = subspace(phi_0p, oid_sVSH_t)*180/pi;
 
 for i=(1:80)
     %mVSH In and Spheroid In

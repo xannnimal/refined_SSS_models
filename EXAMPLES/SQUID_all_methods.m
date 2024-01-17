@@ -96,10 +96,6 @@ cond_SNout_spm= cond(SNout_spm);
 condition_sph_sph = cond([SNin_spm SNout_spm]);
 condition_sph_vsh = cond([SNin_spm SNout]);
 
-check_data_oidin = subspace(phi_0, SNin_spm)*180/pi;
-check_data_multi = subspace(phi_0, SNin_tot)*180/pi;
-check_data_single = subspace(phi_0, SNin)*180/pi;
-
 %calculate the subspace angle between the reconstructed and noiseless original data for one time instant
 % time=10;
 % sub_multi_vsh=subspace(phi_0(:,time),data_rec_multi_vsh(:,time))*180/pi;
@@ -132,6 +128,12 @@ sVSH_sVSH_t=[SNin SNout];
 mVSH_sVSH_t=[SNin_tot SNout];
 oid_oid_t=[SNin_spm,SNout_spm];
 oid_sVSH_t=[SNin_spm,SNout];
+
+check_data_vsh_vsh = subspace(phi_0, sVSH_sVSH_t)*180/pi;
+check_data_mvsh_vsh = subspace(phi_0, mVSH_sVSH_t)*180/pi;
+check_data_oid_oid = subspace(phi_0, oid_oid_t)*180/pi;
+check_data_oid_vsh = subspace(phi_0, oid_sVSH_t)*180/pi;
+
 for i=(1:80)
     %mVSH In and Spheroid In
     angles_mVSH_oid_t(i)=subspace(SNin_tot(:,i),SNin_spm)*180/pi;
