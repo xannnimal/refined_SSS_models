@@ -32,11 +32,11 @@ end
 inside = v(:,1).^2/r(1)^2+v(:,2).^2/r(2)^2+v(:,3).^2/r(3)^2;
 c = sum(inside<1);
 while c>0
-  rt = r-1;
+  rt = r-0.001;
   inside = v(:,1).^2/rt(1)^2+v(:,2).^2/rt(2)^2+v(:,3).^2/rt(3)^2;
   cc = sum(inside<1);
   if(cc<=c)
-    r = r-1;  
+    r = r-0.001;  %changed from -1 for meter input, not mm
     c = cc;
   end 
 end

@@ -21,16 +21,16 @@ filename="headwithsensors1.mat";
 [SNin_tot_p,SNout_p] = multiVSHin_singleVSHout(center1', center2',opm_matrix',R_hat',theta_hat',phi_hat',ch_types,Lin,Lout);
 
 %calculate spheroidal in/out
-%find semi major and minor- code assumes mm so change units
-opm_matrix_mm = opm_matrix*1000;
-R_hat_mm = R_hat*1000;
-theta_hat_mm = theta_hat*1000;
-phi_hat_mm = phi_hat*1000;
-[semi_major_mm,semi_minor_mm,origin_mm]=find_ellipse_axis(opm_matrix_mm);
-[Sin_spm_p_mm,Sout_spm_p_mm] = spheroidIN_spheroidOUT(opm_matrix_mm,R_hat_mm,theta_hat_mm,phi_hat_mm,origin_mm,semi_major_mm,semi_minor_mm,Lin,Lout);
-%scale back to m
-Sin_spm_p = Sin_spm_p_mm/1000;
-Sout_spm_p = Sout_spm_p_mm/1000;
+[semi_major,semi_minor,origin]=find_ellipse_axis(opm_matrix);
+[Sin_spm_p,Sout_spm_p] = spheroidIN_spheroidOUT(opm_matrix,R_hat,theta_hat,phi_hat,origin,semi_major,semi_minor,Lin,Lout);
+for j = 1:size(Sin_spm_p,2)
+  SNin_spm_p(:,j) = Sin_spm_p(:,j)/norm(Sin_spm_p(:,j));
+end
+
+for j = 1:size(Sout_spm_p,2)
+  SNout_spm_p(:,j) = Sout_spm_p(:,j)/norm(Sout_spm_p(:,j));
+end
+
 
 %% generate single dipole simulated data
 dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
@@ -56,15 +56,15 @@ pS_multi_vsh_p=pinv([SNin_tot_p SNout_p]);
 XN_multi_vsh_p=pS_multi_vsh_p*phi_0p;
 data_rec_multi_vsh_p=real(SNin_tot_p*XN_multi_vsh_p(1:size(SNin_tot_p,2),:)); 
 %spheroidal in, spheroidal out
-pS_sph_sph_p=pinv(Sin_spm_p);   
+pS_sph_sph_p=pinv([SNin_spm_p,SNout_spm_p]);   
 XN_sph_sph_p=pS_sph_sph_p*phi_0p;
-data_rec_sph_sph_p=real(Sin_spm_p*XN_sph_sph_p(1:size(Sin_spm_p,2),:)); 
+data_rec_sph_sph_p=real(SNin_spm_p*XN_sph_sph_p(1:size(SNin_spm_p,2),:)); 
 %spheroidal in, single vsh out
-pS_sph_vsh_p=pinv([Sin_spm_p SNout_p]);   
+pS_sph_vsh_p=pinv([SNin_spm_p SNout_p]);   
 XN_sph_vsh_p=pS_sph_vsh_p*phi_0p;
-data_rec_sph_vsh_p=real(Sin_spm_p*XN_sph_vsh_p(1:size(Sin_spm_p,2),:));
+data_rec_sph_vsh_p=real(SNin_spm_p*XN_sph_vsh_p(1:size(SNin_spm_p,2),:));
 
-check_data_oidin = subspace(phi_0p, Sin_spm_p)*180/pi;
+check_data_oidin = subspace(phi_0p, SNin_spm_p)*180/pi;
 check_data_multi = subspace(phi_0p, SNin_tot_p)*180/pi;
 check_data_single = subspace(phi_0p, SNin_p)*180/pi;
 
@@ -74,10 +74,10 @@ cond_SNin_p=cond(SNin_p);
 cond_SNin_tot_p = cond(SNin_tot_p);
 cond_SNout_p= cond(SNout_p);
 condition_multi_vsh_p = cond([SNin_tot_p SNout_p]);
-cond_SNin_spm_p=cond(Sin_spm_p);
-cond_SNout_spm_p= cond(Sout_spm_p);
-condition_sph_sph_p = cond([Sin_spm_p Sout_spm_p]);
-condition_sph_vsh_p = cond([Sin_spm_p SNout_p]);
+cond_SNin_spm_p=cond(SNin_spm_p);
+cond_SNout_spm_p= cond(SNout_spm_p);
+condition_sph_sph_p = cond([SNin_spm_p SNout_spm_p]);
+condition_sph_vsh_p = cond([SNin_spm_p SNout_p]);
 
 %calculate the subspace angle between the reconstructed and noiseless original data for one time instant
 % time=10;
@@ -117,9 +117,14 @@ hold off
 %% compare with theta as sensing dir, mVSH
 %calculate multi-vsh in and single-vsh out
 [SNin_tot_t,SNout_t] = multiVSHin_singleVSHout(center1', center2',opm_matrix',R_hat',phi_hat',theta_hat',ch_types,Lin,Lout);
-[Sin_spm_t_mm,Sout_spm_t_mm] = spheroidIN_spheroidOUT(opm_matrix_mm,R_hat_mm,phi_hat_mm,theta_hat_mm,origin_mm,semi_major_mm,semi_minor_mm,Lin,Lout);
-Sin_spm_t = Sin_spm_t_mm/1000;
-Sout_spm_t = Sout_spm_t_mm/1000;
+[Sin_spm_t,Sout_spm_t] = spheroidIN_spheroidOUT(opm_matrix,R_hat,phi_hat,theta_hat,origin,semi_major,semi_minor,Lin,Lout);
+for j = 1:size(Sin_spm_t,2)
+  SNin_spm_t(:,j) = Sin_spm_t(:,j)/norm(Sin_spm_t(:,j));
+end
+
+for j = 1:size(Sout_spm_t,2)
+  SNout_spm_t(:,j) = Sout_spm_t(:,j)/norm(Sout_spm_t(:,j));
+end
 
 
 %% generate single dipole simulated data
@@ -142,13 +147,13 @@ XN_multi_vsh_t=pS_multi_vsh_t*phi_0t;
 data_rec_multi_vsh_t=real(SNin_tot_t*XN_multi_vsh_t(1:size(SNin_tot_t,2),:)); 
 %spheroidal in, spheroidal out
 %pS_sph_sph_t=pinv([Sin_spm_t Sout_spm_t]); 
-pS_sph_sph_t=pinv(Sin_spm_t);  
+pS_sph_sph_t=pinv([SNin_spm_t,SNout_spm_t]);  
 XN_sph_sph_t=pS_sph_sph_t*phi_0t;
-data_rec_sph_sph_t=real(Sin_spm_t*XN_sph_sph_t(1:size(Sin_spm_t,2),:)); 
+data_rec_sph_sph_t=real(SNin_spm_t*XN_sph_sph_t(1:size(SNin_spm_t,2),:)); 
 %spheroidal in, single vsh out
-pS_sph_vsh_t=pinv([Sin_spm_t SNout_t]);   
+pS_sph_vsh_t=pinv([SNin_spm_t SNout_t]);   
 XN_sph_vsh_t=pS_sph_vsh_t*phi_0t;
-data_rec_sph_vsh_t=real(Sin_spm_t*XN_sph_vsh_t(1:size(Sin_spm_t,2),:));
+data_rec_sph_vsh_t=real(SNin_spm_t*XN_sph_vsh_t(1:size(SNin_spm_t,2),:));
 
 %check condition numbers
 cond_vsh_vsh_t=cond([SNin_t SNout_t]);
@@ -156,12 +161,12 @@ cond_SNin_t=cond(SNin_t);
 cond_SNin_tot_t = cond(SNin_tot_t,2);
 cond_SNout_t= cond(SNout_t);
 condition_multi_vsh_t = cond([SNin_tot_t SNout_t]);
-cond_SNin_spm_t=cond(Sin_spm_t);
+cond_SNin_spm_t=cond(SNin_spm_t);
 cond_SNout_spm_t= cond(Sout_spm_t);
-condition_sph_sph_t = cond([Sin_spm_t Sout_spm_t]);
-condition_sph_vsh_t = cond([Sin_spm_t SNout_t]);
+condition_sph_sph_t = cond([SNin_spm_t SNout_spm_t]);
+condition_sph_vsh_t = cond([SNin_spm_t SNout_t]);
 
-check_data_spmt = subspace(phi_0t,Sin_spm_t)*180/pi;
+check_data_spmt = subspace(phi_0t,SNin_spm_t)*180/pi;
 check_data_multit = subspace(phi_0t,SNin_tot_t)*180/pi;
 
 
