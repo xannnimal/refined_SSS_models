@@ -1,4 +1,4 @@
-function B_field = current_dipole(chanpos, dip_pos, Q)
+function B_field = current_dipole(chanpos, coilori, dip_pos, Q)
 % Iman and Xan 2024
 %Calculating the magnetic field from a dipole using J Sarvas eq. 25
 % current dipole Q at r_o (dip_pos)
@@ -11,6 +11,7 @@ for i=(1:size(chanpos,1))
     r(i)=sqrt(chanpos(i,1)^2+chanpos(i,2)^2+chanpos(i,3)^2); %1x144, r x channel
 end
 %calculate F, del_F, and B
+%In the current dipole calculation, you first take the dot product between (Q x r_0) and r, then multiply del-F by this scalar. And yes, Q, is a single 3D vector just like m.
 for i=(1:size(chanpos,1))
     r_vec=chanpos(i,:);
     c=bsxfun(@minus, r_vec, dip_pos);
@@ -18,8 +19,13 @@ for i=(1:size(chanpos,1))
     a=norm(a_vec); %magnitude
     r=norm(r_vec);
     F = a*(r*a+r^2-dot(dip_pos,r_vec));
-    del_F=((1/r)*a^2+(1/a)*dot(a_vec(i,:),r_vec)+2*a+2*r)*r_vec - (a+2*r+(1/a)*dot(a_vec(i,:),r_vec)*r_vec);
-    %B_field(i,:)= (mu0/(4*pi*F^2))*(cross(F*Q,dip_pos)-dot(cross(Q,dip_pos),r_vec*del_F));
+    del_F=((1/r)*a^2+(1/a)*dot(a_vec(i,:),r_vec)+2*a+2*r)*r_vec - (a+2*r+(1/a)*dot(a_vec(i,:),r_vec)*dip_pos);
+    B(i,:)= (mu0/(4*pi*F^2))*(cross(F*Q,dip_pos)-dot(cross(Q,dip_pos),r_vec)*del_F);
+end
+
+%project the Bfield into sensor direction, coilpos rhat
+for i=(1:size(chanpos,1))
+    B_field(i,:) =dot(coilori(i,:),B(i,:));
 end
 
 

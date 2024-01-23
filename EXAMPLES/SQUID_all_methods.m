@@ -56,7 +56,10 @@ end
 [Sin,SNin] = Sin_vsh_vv([0,0,0]',R_mag,EX_mag,EY_mag,EZ_mag,ch_types,Lin);
 [Sout,SNout] = Sout_vsh_vv([0,0,0]',R_mag,EX_mag,EY_mag,EZ_mag,ch_types,Lout);
 
+
 %% generate single dipole simulated data
+% dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
+% dip_mom = [0,1,1]; %(size 3xN)
 % dipole_data = single_dipole_sim(R_mag',EZ_mag',dip_pos,dip_mom);
 % %pick a specific channel
 % phi_0= dipole_data.trial{1,1}(:,:);
@@ -64,10 +67,41 @@ end
 dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,1,1]; %(size 3xN)
 %calculate B field
-phi_0 = magneticDipole(RT_mag,EZT_mag,dip_pos,dip_mom);
-
+phi_0 = magneticDipole(RT_mag,EZT_mag,EXT_mag,dip_pos,dip_mom,ch_types);
+for i=(1:size(phi_0,1))
+    if mod(i,3)==0 %every third is a magnetometer
+        phi_0(i)=phi_0(i)*100;
+    else
+       phi_0(i)=phi_0(i);
+    end
+end
 
 %% reconstrct internal data
+%%check mags vs grads
+j=1;
+k=1;
+for i=(1:size(RT_mag,1))
+    if mod(i,3)==0 %every third is a magnetometer
+        SNin_mags(j,:)=SNin(i,:);
+        SNout_mags(j,:)=SNout(i,:);
+        phi_mags(j,:)=phi_0(i,:);
+        j=j+1;
+    else
+        SNin_grads(k,:)=SNin(i,:);
+        SNout_grads(k,:)=SNout(i,:);
+        phi_grads(k,:)=phi_0(i,:);
+        k=k+1;
+    end
+end
+%only mags
+pS_mags=pinv([SNin_mags SNout_mags]);
+XN_mags=pS_mags*phi_mags;
+data_rec_vsh_mags=real(SNin_mags*XN_mags(1:size(SNin_mags,2),:));
+%only grads
+pS_grads=pinv([SNin_grads SNout_grads]);
+XN_grads=pS_grads*phi_grads;
+data_rec_vsh_grads=real(SNin_grads*XN_grads(1:size(SNin_grads,2),:));
+
 %single in, single out
 pS=pinv([SNin SNout]);
 XN=pS*phi_0;
@@ -128,6 +162,10 @@ sVSH_sVSH_t=[SNin SNout];
 mVSH_sVSH_t=[SNin_tot SNout];
 oid_oid_t=[SNin_spm,SNout_spm];
 oid_sVSH_t=[SNin_spm,SNout];
+
+
+check_data_vsh_vsh_mags = subspace(phi_mags, [SNin_mags SNout_mags])*180/pi;
+check_data_vsh_vsh_grads = subspace(phi_grads, [SNin_grads SNout_grads])*180/pi;
 
 check_data_vsh_vsh = subspace(phi_0, sVSH_sVSH_t)*180/pi;
 check_data_mvsh_vsh = subspace(phi_0, mVSH_sVSH_t)*180/pi;

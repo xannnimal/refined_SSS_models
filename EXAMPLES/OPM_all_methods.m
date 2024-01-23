@@ -55,7 +55,7 @@ pS_multi_vsh_p=pinv([SNin_tot_p SNout_p]);
 XN_multi_vsh_p=pS_multi_vsh_p*phi_0p;
 data_rec_multi_vsh_p=real(SNin_tot_p*XN_multi_vsh_p(1:size(SNin_tot_p,2),:)); 
 %spheroidal in, spheroidal out
-pS_sph_sph_p=pinv([SNin_spm_p,SNout_spm_p]);   
+pS_sph_sph_p=pinv([SNin_spm_p,SNout_spm_p]);  
 XN_sph_sph_p=pS_sph_sph_p*phi_0p;
 data_rec_sph_sph_p=real(SNin_spm_p*XN_sph_sph_p(1:size(SNin_spm_p,2),:)); 
 %spheroidal in, single vsh out
@@ -166,19 +166,6 @@ cond_SNin_spm_t=cond(SNin_spm_t);
 cond_SNout_spm_t= cond(Sout_spm_t);
 condition_sph_sph_t = cond([SNin_spm_t SNout_spm_t]);
 condition_sph_vsh_t = cond([SNin_spm_t SNout_t]);
-
-% check_data_oidin_t = subspace(phi_0t, SNin_spm_t)*180/pi;
-% check_data_multi_t = subspace(phi_0t, SNin_tot_t)*180/pi;
-% check_data_single_t = subspace(phi_0t, SNin_t)*180/pi;
-
-
-
-%calculate the subspace angle between the reconstructed and noiseless original data for one time instant
-% time=10;
-% sub_multi_vsh_t=subspace(phi_0t(:,time),data_rec_multi_vsh_t(:,time))*180/pi;
-% sub_sph_sph_t=subspace(phi_0t(:,time),data_rec_sph_sph_t(:,time))*180/pi;
-% sub_sph_vsh_t=subspace(phi_0t(:,time),data_rec_sph_vsh_t(:,time))*180/pi;
-% sub_vsh_vsh_t=subspace(phi_0t(:,time),data_rec_vsh_t(:,time))*180/pi;
 
 
 
