@@ -5,7 +5,8 @@ function magneticFlux = magneticDipole(chanpos,sensing_dir,grad_pos_ex,dip_pos, 
 % dip_pos: position vector, from the center of the magnetic dipole to where the magnetic field is measured
 % chanpos: channel position matrix nchanx3
 % sensing_dir: the orientation/measuring direction of the sensors
-%grad_pos_ex: for gradiometers, need EX positions
+% grad_pos_ex: for gradiometers, need EX positions, for OPM sensors this
+% part of the function is never used
 ch_types=ch_types';
 mu0 = pi*4E-7; 
 rhat = dip_pos/norm(dip_pos);
