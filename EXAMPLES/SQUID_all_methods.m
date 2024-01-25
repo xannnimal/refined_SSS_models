@@ -68,13 +68,13 @@ dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,1,1]; %(size 3xN)
 %calculate B field
 phi_0 = magneticDipole(RT_mag,EZT_mag,EXT_mag,dip_pos,dip_mom,ch_types);
-for i=(1:size(phi_0,1))
-    if mod(i,3)==0 %every third is a magnetometer
-        phi_0(i)=phi_0(i)*100;
-    else
-       phi_0(i)=phi_0(i);
-    end
-end
+% for i=(1:size(phi_0,1))
+%     if mod(i,3)==0 %every third is a magnetometer
+%         phi_0(i)=phi_0(i)*100;
+%     else
+%        phi_0(i)=phi_0(i);
+%     end
+% end
 
 %% reconstrct internal data
 %%check mags vs grads

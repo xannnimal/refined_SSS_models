@@ -15,6 +15,12 @@ filename="headwithsensors1.mat";
 %generate helmet pos and ori with "gen_opm_geometry"
 [opm_matrix,R_hat,theta_hat,phi_hat,ch_types] = gen_opm_geometry(filename);
 
+%% opm data
+% coordsys = 'device'; 
+% fname = "phantom_32_100nam_raw.fif";
+% [R_mag,EX_mag,EY_mag,EZ_mag] = fiff_getpos(fname,coordsys);
+
+
 %% SSS expansions- phi
 %speficy sensing direction. SQUID=R_hat or EZ, OPM=Theta or phi hat
 %calculate multi-vsh in and single-vsh out
@@ -31,7 +37,7 @@ for j = 1:size(Sout_spm_p,2)
   SNout_spm_p(:,j) = Sout_spm_p(:,j)/norm(Sout_spm_p(:,j));
 end
 
-
+return
 %% generate single dipole simulated data
 dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,1,1]; %(size 3xN), changed from [0,1,0] to get a nonzero B-field measurement
