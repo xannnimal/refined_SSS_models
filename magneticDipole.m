@@ -28,10 +28,10 @@ for i=(1:size(chanpos,1))
     else %gradiometers, ch_types=0
         %calculate magntiudes of r
         del_x = 0.0084*grad_pos_ex(i,:);
-        plus_r_vec = [chanpos(i,1)+del_x(1,1)-dip_pos(1), chanpos(i,2)+del_x(1,2)-dip_pos(2), chanpos(i,3)+del_x(1,3)-dip_pos(3)];
+        plus_r_vec = [chanpos(i,1)+del_x(1)-dip_pos(1), chanpos(i,2)+del_x(2)-dip_pos(2), chanpos(i,3)+del_x(3)-dip_pos(3)];
         plus_r = norm(plus_r_vec);
         plus_rhat = [plus_r_vec(1)/plus_r, plus_r_vec(2)/plus_r, plus_r_vec(3)/plus_r];
-        min_r_vec = [chanpos(i,1)-del_x(1,1)-dip_pos(1), chanpos(i,2)-del_x(1,2)-dip_pos(2), chanpos(i,3)-del_x(1,3)-dip_pos(3)];
+        min_r_vec = [chanpos(i,1)-del_x(1)-dip_pos(1), chanpos(i,2)-del_x(2)-dip_pos(2), chanpos(i,3)-del_x(3)-dip_pos(3)];
         min_r = norm(min_r_vec);
         min_rhat = [min_r_vec(1)/min_r, min_r_vec(2)/min_r, min_r_vec(3)/min_r];
 
