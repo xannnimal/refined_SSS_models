@@ -1,7 +1,7 @@
 %% SQUID with all recons
 clear
 %% constant variables 
-Lin = 8; % Truncation order of the internal VSH basis
+Lin = 10; % Truncation order of the internal VSH basis
 Lout = 3; % Truncation order of the external VSH basis
 dim_in = (Lin+1)^2 - 1; % Dimension of the internal SSS basis, should be 80
 center1= [-0.00350699, 0.01138051, 0.05947857]; 
@@ -56,31 +56,26 @@ end
 dip_pos = [0.07,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,1,1]; %(size 3xN)
 %calculate B field
-%phi_0 = magneticDipole(R',EZ',EX',dip_pos,dip_mom,ch_types);
-% for i=(1:size(phi_0,1))
-%     if mod(i,3)==0 %every third is a magnetometer
-%         phi_0(i)=phi_0(i)*100;
+phi_0 = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom',ch_types)';
+
+%using Samu's function
+% m=dip_mom';
+% r0=dip_pos';
+% NX=EX;
+% NY=EY;
+% NZ=EZ;
+% magtype='gegen';
+% k=1;
+% for i=(1:306)
+%     if ch_types(i)==1 %every third is a magnetometer
+%         mags(k)=i;
+%         k=k+1;
 %     else
-%        phi_0(i)=phi_0(i);
+%         k=k;
 %     end
 % end
-m=dip_mom';
-r0=dip_pos';
-NX=EX;
-NY=EY;
-NZ=EZ;
-magtype='gegen';
-k=1;
-for i=(1:306)
-    if ch_types(i)==1 %every third is a magnetometer
-        mags(k)=i;
-        k=k+1;
-    else
-        k=k;
-    end
-end
-vuovec = mkentta(m,r0,R,NX,NY,NZ,mags,magtype);
-phi_0=vuovec';
+% vuovec = mkentta(m,r0,R,NX,NY,NZ,mags,magtype);
+% phi_0=vuovec';
 %% reconstrct internal data
 %%check mags vs grads
 j=1;

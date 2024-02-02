@@ -1,4 +1,4 @@
-function magneticFlux = magneticDipole(chanpos,sensing_dir,grad_pos_ex,dip_pos, dip_mom, ch_types)
+function magneticFlux = magneticDipole(chanpos,EX,EY,EZ,dip_pos, dip_mom, ch_types)
 % Iman and Xan 2024
 % Calculating the magnetic field from a dipole using Griffiths EM eq. 5.89
 % dip_mom: magnetic moment 1x3
@@ -9,40 +9,61 @@ function magneticFlux = magneticDipole(chanpos,sensing_dir,grad_pos_ex,dip_pos, 
 %                part of the function is never used
 ch_types=ch_types';
 mu0 = pi*4E-7; 
-%rhat = dip_pos/norm(dip_pos);
+mag_size= 21.0e-3;
+weights_mag = [16/81;25/324;25/324;25/324;25/324;10/81;10/81;10/81;10/81];
+d = sqrt(3/5)*(mag_size/2);
+D_mag = [0 0; d d; -d d; -d -d; d -d; 0 d; 0 -d; d 0; -d 0]';
+baseline = 16.69e-3;
+weights_grad = (1/(4*baseline))*ones(4,1);
+weights_grad(5:8) = -(1/(4*baseline))*ones(4,1);
+dx1 = 5.89e-3;
+dx2 = 10.8e-3;
+dy = 6.71e-3;
+D_grad = [dx1 dy; dx2 dy; dx1 -dy; dx2 -dy; -dx1 dy; -dx2 dy; -dx1 ...
+   -dy; -dx2 -dy]';
+
 %make r vector from (x,y,z) chanpos 
-for i=(1:size(chanpos,1))
-    %r(i)=sqrt(chanpos(i,1)^2+chanpos(i,2)^2+chanpos(i,3)^2);
-    sensing_dir(i,:)=sensing_dir(i,:)/norm(sensing_dir(i,:));
-end
+% for i=(1:size(chanpos,2))
+%     %r(i)=sqrt(chanpos(i,1)^2+chanpos(i,2)^2+chanpos(i,3)^2);
+%     EZ(i,:)=EZ(i,:)/norm(EZ(i,:));
+% end
 %calculate B for each channel position
-for i=(1:size(chanpos,1))
-    if ch_types(i)==1 %magnetometer calculations
+nchan=size(chanpos,2);
+for k=(1:nchan)
+    if ch_types(k)==1 %magnetometer calculations
         %expressing the location vector r as the product of its magnitude times the unit vector in its direction
         %rhat points from dipole location to sensor
-        r_vec=[chanpos(i,1)-dip_pos(1),chanpos(i,2)-dip_pos(1),chanpos(i,3)-dip_pos(3)];
-        r= norm(r_vec);
-        rhat=[r_vec(1)/r, r_vec(2)/r, r_vec(3)/r];
-        BField = mu0/(4*pi)*(1/(r^3))*(3*(dot(dip_mom,rhat)*rhat-dip_mom));
-        magneticFlux(i,:) =dot(BField,sensing_dir(i,:)); %no integral for point mags
+        magneticFlux(k) = mag(chanpos(:,k),EX(:,k),EY(:,k),EZ(:,k),dip_pos, dip_mom,weights_mag, D_mag);
     else %gradiometers, ch_types=0
-        %calculate magntiudes of r
-        del_x = 0.0084*grad_pos_ex(i,:);
-        plus_r_vec = [chanpos(i,1)+del_x(1)-dip_pos(1), chanpos(i,2)+del_x(2)-dip_pos(2), chanpos(i,3)+del_x(3)-dip_pos(3)];
-        plus_r = norm(plus_r_vec);
-        plus_rhat = [plus_r_vec(1)/plus_r, plus_r_vec(2)/plus_r, plus_r_vec(3)/plus_r];
-        min_r_vec = [chanpos(i,1)-del_x(1)-dip_pos(1), chanpos(i,2)-del_x(2)-dip_pos(2), chanpos(i,3)-del_x(3)-dip_pos(3)];
-        min_r = norm(min_r_vec);
-        min_rhat = [min_r_vec(1)/min_r, min_r_vec(2)/min_r, min_r_vec(3)/min_r];
-
-        %B field 8.4 mm in the sensor's positive x-direction (EX)
-        BField_plus = mu0/(4*pi)*(1/(plus_r^3))*(3*(dot(dip_mom,plus_rhat)*plus_rhat-dip_mom));
-        %B field 8.4 mm in the sensor's negative x-direction (EX)
-        BField_min = mu0/(4*pi)*(1/(min_r^3))*(3*(dot(dip_mom,min_rhat)*min_rhat-dip_mom));
-        %flux = positive - negative, divide by the gradiometer baseline (16.8 mm)
-        flux = dot(BField_plus-BField_min,sensing_dir(i,:));
-        magneticFlux(i,:)=flux/0.0168;
+        magneticFlux(k) = grad(chanpos(:,k),EX(:,k),EY(:,k),EZ(:,k),dip_pos, dip_mom,weights_grad, D_grad);
     end
 end
 
+%magnetometer function
+function mag_flux = mag(chanpos_i,EX_i,EY_i,EZ_i,dip_pos, dip_mom,weights_mag, D_mag)
+    scale = 1.0e-7;
+    for i=1:9
+        r_integral = chanpos_i + D_mag(1,i)*EX_i + D_mag(2,i)*EY_i;
+        rvec = r_integral - dip_pos;
+        r_hat = norm(rvec);
+        Bfield = (3*dot(dip_mom,rvec)/r_hat^5)*rvec;
+        Bfield2= dip_mom/r_hat^3;
+        B(:,i)= scale*(Bfield-Bfield2);
+    end
+    mag_flux = dot(B*weights_mag,EZ_i);
+end
+
+%gradiometer function
+function mag_flux = grad(chanpos_i,EX_i,EY_i,EZ_i,dip_pos, dip_mom,weights_grad, D_grad)
+    scale = 1.0e-7;
+    for i=1:8
+        r_integral = chanpos_i + D_grad(1,i)*EX_i + D_grad(2,i)*EY_i;
+        rvec = r_integral - dip_pos;
+        r_hat = norm(rvec);
+        Bfield = (3*dot(dip_mom,rvec)/r_hat^5)*rvec;
+        Bfield2= dip_mom/r_hat^3;
+        B(:,i)= scale*(Bfield-Bfield2);
+    end
+    mag_flux = dot(B*weights_grad,EZ_i);
+end
 end
