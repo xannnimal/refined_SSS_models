@@ -53,10 +53,27 @@ end
 % %pick a specific channel
 % phi_0= dipole_data.trial{1,1}(:,:);
 
-dip_pos = [0.07,0,0]; %[Rx Ry Rz] (size Nx3)
+dip_pos_in = [0.07,0,0]; %[Rx Ry Rz] (size Nx3)
+dip_pos_out = [0.15,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,1,1]; %(size 3xN)
-%calculate B field
-phi_0 = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom',ch_types)';
+%add time dependence to dipole moment
+f_start = 100; % start frequency
+f_end = 50; % end frequency
+timestep = 0.0001;
+T = 0.05;
+rate_of_change = (f_start - f_end)/T;
+times = timestep:timestep:T;
+for i=(1:3)
+    dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+end
+
+%simulate dipoles
+for i=(1:500)
+    phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_in',dip_mom_t(:,i),ch_types)';
+    phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t(:,i),ch_types)';
+end
+
+phi_0=phi_in;
 
 %using Samu's function
 % m=dip_mom';
@@ -144,7 +161,7 @@ check_data_vsh_vsh = subspace(phi_0, sVSH_sVSH)*180/pi;
 check_data_mvsh_vsh = subspace(phi_0, mVSH_sVSH)*180/pi;
 check_data_oid_oid = subspace(phi_0, oid_oid)*180/pi;
 check_data_oid_vsh = subspace(phi_0, oid_sVSH)*180/pi;
-return
+
 %calculate the subspace angle between the reconstructed and noiseless original data for one time instant
 % time=10;
 % sub_multi_vsh=subspace(phi_0(:,time),data_rec_multi_vsh(:,time))*180/pi;
@@ -160,12 +177,12 @@ return
 
 figure(2);
 hold on;
-plot(phi_0)
-plot(data_rec_vsh)
-plot(data_rec_multi_vsh)
-plot(data_rec_sph_sph)
-plot(data_rec_sph_vsh)
-title('All SSS Methods, Channel 1, Sandia Helmet phi, dipole 1cm x')
+plot(times,phi_0(1,:))
+plot(times,data_rec_vsh(1,:))
+plot(times,data_rec_multi_vsh(1,:))
+plot(times,data_rec_sph_sph(1,:))
+plot(times,data_rec_sph_vsh(1,:))
+title('All SSS Methods, Channel 1, Sandia Helmet phi, dipole 5cm x')
 xlabel('time')
 ylabel('MEG0121')
 %ylim([-8e-12 8e-12])
