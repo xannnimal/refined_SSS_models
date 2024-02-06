@@ -1,7 +1,7 @@
 %% SQUID with all recons
 clear
 %% constant variables 
-Lin = 10; % Truncation order of the internal VSH basis
+Lin = 8; % Truncation order of the internal VSH basis
 Lout = 3; % Truncation order of the external VSH basis
 dim_in = (Lin+1)^2 - 1; % Dimension of the internal SSS basis, should be 80
 center1= [-0.00350699, 0.01138051, 0.05947857]; 
@@ -22,6 +22,15 @@ for i=(1:size(EX,2))
         ch_types(i)=0;
     end
 end
+k=1;
+for i=(1:306)
+    if ch_types(i)==1 %every third is a magnetometer
+        mags(k)=i;
+        k=k+1;
+    else
+        k=k;
+    end
+end
 
 
 %% SSS expansions- multi origin interior
@@ -40,22 +49,22 @@ for j = 1:size(Sout_spm_p,2)
 end
 
 %calculate multi-vsh in and single-vsh out
-[SNin_tot,SNout] = multiVSHin_singleVSHout(center1', center2',R,EX,EY,EZ,ch_types,Lin,Lout);
+[SNin_tot,~] = multiVSHin_singleVSHout(center1', center2',R,EX,EY,EZ,ch_types,Lin,Lout);
 %calculate single in/out
 [Sin,SNin] = Sin_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lin);
 [Sout,SNout] = Sout_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lout);
 
 
 %% generate single dipole simulated data
-% dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
-% dip_mom = [0,1,1]; %(size 3xN)
+% for fielf trip generated data
 % dipole_data = single_dipole_sim(R_mag',EZ_mag',dip_pos,dip_mom);
-% %pick a specific channel
 % phi_0= dipole_data.trial{1,1}(:,:);
 
-dip_pos_in = [0.07,0,0]; %[Rx Ry Rz] (size Nx3)
+dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_pos_out = [0.15,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,1,1]; %(size 3xN)
+%phi_in= magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom',ch_types)';
+
 %add time dependence to dipole moment
 f_start = 100; % start frequency
 f_end = 50; % end frequency
@@ -68,11 +77,10 @@ for i=(1:3)
 end
 
 %simulate dipoles
-for i=(1:500)
-    phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_in',dip_mom_t(:,i),ch_types)';
+for i=(1:size(times,2))
+    phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)';
     phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t(:,i),ch_types)';
 end
-
 phi_0=phi_in;
 
 %using Samu's function
@@ -161,13 +169,16 @@ check_data_vsh_vsh = subspace(phi_0, sVSH_sVSH)*180/pi;
 check_data_mvsh_vsh = subspace(phi_0, mVSH_sVSH)*180/pi;
 check_data_oid_oid = subspace(phi_0, oid_oid)*180/pi;
 check_data_oid_vsh = subspace(phi_0, oid_sVSH)*180/pi;
-
-%calculate the subspace angle between the reconstructed and noiseless original data for one time instant
-% time=10;
-% sub_multi_vsh=subspace(phi_0(:,time),data_rec_multi_vsh(:,time))*180/pi;
-% sub_sph_sph=subspace(phi_0(:,time),data_rec_sph_sph(:,time))*180/pi;
-% sub_sph_vsh=subspace(phi_0(:,time),data_rec_sph_vsh(:,time))*180/pi;
-% sub_vsh_vsh=subspace(phi_0(:,time),data_rec_vsh(:,time))*180/pi;
+check_data_vsh_vsh_d = subspace(phi_0(:,1), data_rec_vsh(:,1))*180/pi;
+% for i=(1:306)
+%     check_data_vsh_vsh_d(i) = subspace(phi_0(i,:), data_rec_vsh)*180/pi;
+%     check_data_mvsh_vsh_d(i) = subspace(phi_0(i,:), data_rec_multi_vsh)*180/pi;
+%     check_data_oid_oid_d(i) = subspace(phi_0(i,:), data_rec_sph_sph)*180/pi;
+%     check_data_oid_vsh_d(i) = subspace(phi_0(i,:), data_rec_sph_vsh)*180/pi;
+% end
+% check_data_vsh_vsh_dmin = min(check_data_vsh_vsh_d);
+% check_data_vsh_vsh_dmax = max(check_data_vsh_vsh_d);
+% check_data_vsh_vsh_dav = mean(check_data_vsh_vsh_d);
 
 %% plot data to check
 %plot data from single channel
@@ -179,9 +190,9 @@ figure(2);
 hold on;
 plot(times,phi_0(1,:))
 plot(times,data_rec_vsh(1,:))
-plot(times,data_rec_multi_vsh(1,:))
-plot(times,data_rec_sph_sph(1,:))
-plot(times,data_rec_sph_vsh(1,:))
+%plot(times,data_rec_multi_vsh(1,:))
+%plot(times,data_rec_sph_sph(1,:))
+%plot(times,data_rec_sph_vsh(1,:))
 title('All SSS Methods, Channel 1, Sandia Helmet phi, dipole 5cm x')
 xlabel('time')
 ylabel('MEG0121')
