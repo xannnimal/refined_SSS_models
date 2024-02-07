@@ -38,8 +38,29 @@ dip_mom = [0,1,1]; %(size 3xN), changed from [0,1,0] to get a nonzero B-field me
 %pick a specific channel
 %phi_0p= dipole_data_p.trial{1,1}(:,:);
 %calculate B field
-phi_0p = magneticDipole(opm_matrix,phi_hat,theta_hat,dip_pos,dip_mom,ch_types);
+%phi_0p = magneticDipole(opm_matrix,phi_hat,theta_hat,dip_pos,dip_mom,ch_types);
 %data_current = current_dipole(opm_matrix,dip_pos,dip_mom);
+
+dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
+dip_pos_out = [0.15,0,0]; %[Rx Ry Rz] (size Nx3)
+dip_mom = [0,1,1]; %(size 3xN)
+%add time dependence to dipole moment
+f_start = 100; % start frequency
+f_end = 50; % end frequency
+timestep = 0.0001;
+T = 0.05;
+rate_of_change = (f_start - f_end)/T;
+times = timestep:timestep:T;
+for i=(1:3)
+    dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+end
+
+%simulate dipoles
+for i=(1:size(times,2))
+    phi_in(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos',dip_mom_t(:,i),ch_types)';
+    %phi_out(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos',dip_mom_t(:,i),ch_types)';
+end
+phi_0p=phi_in;
 
 %% reconstrct internal data
 %single in, single out
@@ -93,20 +114,20 @@ condition_sph_vsh_p = cond([SNin_spm_p SNout_p]);
 %chan_num=1; %3 corresponds to MEG0111
 %data_time_p=dipole_data_p.time{1,1};
 %data_chan_num_p=dipole_data_p.trial{1,1}(chan_num,:); 
-for i=(1:144)
-    chan_num(i)=i;
-end
+% for i=(1:144)
+%     chan_num(i)=i;
+% end
 
 figure(2);
 hold on;
-plot(chan_num, phi_0p)
-plot(chan_num,data_rec_vsh_p)
-plot(chan_num,data_rec_multi_vsh_p)
-plot(chan_num,data_rec_sph_sph_p)
-plot(chan_num,data_rec_sph_vsh_p)
-title('All SSS Methods, Sandia Helmet Phi, dipole 1cm x')
-xlabel('chan num')
-ylabel('MEG0121')
+plot(times, phi_0p(1,:))
+plot(times,data_rec_vsh_p(1,:))
+plot(times,data_rec_multi_vsh_p(1,:))
+plot(times,data_rec_sph_sph_p(1,:))
+plot(times,data_rec_sph_vsh_p(1,:))
+title('All SSS Methods, Sandia Helmet Phi, dipole 5cm x')
+xlabel('time')
+ylabel('Ch 1')
 %ylim([-8e-12 8e-12])
 %legend({'Raw Data','VSH/VSH','Spm/Spm'},'location','northwest')
 legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
@@ -133,7 +154,15 @@ end
 %phi_0t= dipole_data_t.trial{1,1}(:,:);
 %calculate B field
 %magneticField = magneticDipole(dip_pos,dip_mom);
-phi_0t = magneticDipole(opm_matrix,theta_hat,phi_hat,dip_pos,dip_mom,ch_types);
+%phi_0t = magneticDipole(opm_matrix,theta_hat,phi_hat,dip_pos,dip_mom,ch_types);
+
+%simulate dipoles
+for i=(1:size(times,2))
+    phi_in(:,i) = magneticDipole(opm_matrix',R_hat',phi_hat',theta_hat',dip_pos',dip_mom_t(:,i),ch_types)';
+    %phi_out(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos',dip_mom_t(:,i),ch_types)';
+end
+phi_0t=phi_in;
+
 %% reconstrct internal data
 %single in, single out
 [Sin_t,SNin_t] = Sin_vsh_vv([0,0,0]',opm_matrix',R_hat',phi_hat',theta_hat',ch_types,Lin);
@@ -176,14 +205,14 @@ condition_sph_vsh_t = cond([SNin_spm_t SNout_t]);
 
 figure(3);
 hold on;
-plot(chan_num, phi_0t)
-plot(chan_num,data_rec_vsh_t)
-plot(chan_num,data_rec_multi_vsh_t)
-plot(chan_num,data_rec_sph_sph_t)
-plot(chan_num,data_rec_sph_vsh_t)
-title('All SSS Methods, Sandia Helmet Theta, dipole 1cm x')
+plot(times, phi_0t(1,:))
+plot(times,data_rec_vsh_t(1,:))
+plot(times,data_rec_multi_vsh_t(1,:))
+plot(times,data_rec_sph_sph_t(1,:))
+plot(times,data_rec_sph_vsh_t(1,:))
+title('All SSS Methods, Sandia Helmet Theta, dipole 5cm x')
 xlabel('time')
-ylabel('MEG0121')
+ylabel('Ch 1')
 %legend({'Raw Data','VSH/VSH','Spm/Spm'},'location','northwest')
 legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
 hold off
@@ -225,6 +254,16 @@ check_data_vsh_vsh_t = subspace(phi_0t, sVSH_sVSH_t)*180/pi;
 check_data_mvsh_vsh_t = subspace(phi_0t, mVSH_sVSH_t)*180/pi;
 check_data_oid_oid_t = subspace(phi_0t, oid_oid_t)*180/pi;
 check_data_oid_vsh_t = subspace(phi_0t, oid_sVSH_t)*180/pi;
+% 
+% for i=(1:144)
+%     check_data_vsh_vsh_t(i) = subspace(phi_0t(:,i), sVSH_sVSH_t)*180/pi;
+%     check_data_mvsh_vsh_t(i) = subspace(phi_0t(:,i), mVSH_sVSH_t)*180/pi;
+%     check_data_oid_oid_t(i) = subspace(phi_0t(:,i), oid_oid_t)*180/pi;
+%     check_data_oid_vsh_t(i) = subspace(phi_0t(:,i), oid_sVSH_t)*180/pi;
+% end
+% check_data_vsh_vsh_tmin = min(check_data_vsh_vsh_t);
+% check_data_vsh_vsh_tmax = max(check_data_vsh_vsh_t);
+% check_data_vsh_vsh_tav = mean(check_data_vsh_vsh_t);
 
 check_data_vsh_vsh_p = subspace(phi_0p, sVSH_sVSH_p)*180/pi;
 check_data_mvsh_vsh_p = subspace(phi_0p, mVSH_sVSH_p)*180/pi;

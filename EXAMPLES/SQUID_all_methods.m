@@ -161,24 +161,31 @@ mVSH_sVSH=[SNin_tot SNout];
 oid_oid=[SNin_spm,SNout_spm];
 oid_sVSH=[SNin_spm,SNout];
 
-
 check_data_vsh_vsh_mags = subspace(phi_mags, [SNin_mags SNout_mags])*180/pi;
 check_data_vsh_vsh_grads = subspace(phi_grads, [SNin_grads SNout_grads])*180/pi;
+for i=(1:306)
+    check_data_vsh_vsh_d(i) = subspace(phi_0(:,i), sVSH_sVSH)*180/pi;
+    check_data_mvsh_vsh_d(i) = subspace(phi_0(:,i), mVSH_sVSH)*180/pi;
+    check_data_oid_oid_d(i) = subspace(phi_0(:,i), oid_oid)*180/pi;
+    check_data_oid_vsh_d(i) = subspace(phi_0(:,i), oid_sVSH)*180/pi;
+end
+check_data_vsh_vsh_dmin = min(check_data_vsh_vsh_d);
+check_data_vsh_vsh_dmax = max(check_data_vsh_vsh_d);
+check_data_vsh_vsh_dav = mean(check_data_vsh_vsh_d);
 
-check_data_vsh_vsh = subspace(phi_0, sVSH_sVSH)*180/pi;
-check_data_mvsh_vsh = subspace(phi_0, mVSH_sVSH)*180/pi;
-check_data_oid_oid = subspace(phi_0, oid_oid)*180/pi;
-check_data_oid_vsh = subspace(phi_0, oid_sVSH)*180/pi;
-check_data_vsh_vsh_d = subspace(phi_0(:,1), data_rec_vsh(:,1))*180/pi;
-% for i=(1:306)
-%     check_data_vsh_vsh_d(i) = subspace(phi_0(i,:), data_rec_vsh)*180/pi;
-%     check_data_mvsh_vsh_d(i) = subspace(phi_0(i,:), data_rec_multi_vsh)*180/pi;
-%     check_data_oid_oid_d(i) = subspace(phi_0(i,:), data_rec_sph_sph)*180/pi;
-%     check_data_oid_vsh_d(i) = subspace(phi_0(i,:), data_rec_sph_vsh)*180/pi;
-% end
-% check_data_vsh_vsh_dmin = min(check_data_vsh_vsh_d);
-% check_data_vsh_vsh_dmax = max(check_data_vsh_vsh_d);
-% check_data_vsh_vsh_dav = mean(check_data_vsh_vsh_d);
+check_data_mvsh_vsh_dmin = min(check_data_mvsh_vsh_d);
+check_data_mvsh_vsh_dmax = max(check_data_mvsh_vsh_d);
+check_data_mvsh_vsh_dav = mean(check_data_mvsh_vsh_d);
+
+check_data_oid_oid_dmin = min(check_data_oid_oid_d);
+check_data_oid_oid_dmax = max(check_data_oid_oid_d);
+check_data_oid_oid_dav = mean(check_data_oid_oid_d);
+
+check_data_oid_vsh_dmin = min(check_data_oid_vsh_d);
+check_data_oid_vsh_dmax = max(check_data_oid_vsh_d);
+check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
+
+return
 
 %% plot data to check
 %plot data from single channel
@@ -201,6 +208,9 @@ legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northw
 hold off
 
 
+return
+%% quantify differences between SSS methods using subspace angles
+%calculations independent of the type of raw data
 
 for i=(1:80)
     %mVSH In and Spheroid In
