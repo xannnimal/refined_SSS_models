@@ -57,10 +57,11 @@ end
 
 %simulate dipoles
 for i=(1:size(times,2))
-    phi_in(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos',dip_mom_t(:,i),ch_types)';
-    %phi_out(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos',dip_mom_t(:,i),ch_types)';
+    phi_in(:,i) = magneticDipole_pointMags(opm_matrix',phi_hat',dip_pos', dip_mom_t(:,i))';
+    %phi_out(:,i) = magneticDipole(opm_matrix',phi_hat',dip_pos', dip_mom_t(:,i))';
 end
 phi_0p=phi_in;
+
 
 %% reconstrct internal data
 %single in, single out
@@ -158,8 +159,8 @@ end
 
 %simulate dipoles
 for i=(1:size(times,2))
-    phi_in(:,i) = magneticDipole(opm_matrix',R_hat',phi_hat',theta_hat',dip_pos',dip_mom_t(:,i),ch_types)';
-    %phi_out(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos',dip_mom_t(:,i),ch_types)';
+    phi_in(:,i) = magneticDipole_pointMags(opm_matrix',theta_hat',dip_pos', dip_mom_t(:,i))';
+    %phi_out(:,i) = magneticDipole(opm_matrix',theta_hat',dip_pos', dip_mom_t(:,i))';
 end
 phi_0t=phi_in;
 
