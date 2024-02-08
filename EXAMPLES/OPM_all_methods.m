@@ -42,32 +42,43 @@ dip_mom = [0,1,1]; %(size 3xN), changed from [0,1,0] to get a nonzero B-field me
 %data_current = current_dipole(opm_matrix,dip_pos,dip_mom);
 
 dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
-dip_pos_out = [0.15,0,0]; %[Rx Ry Rz] (size Nx3)
+dip_pos_out = [0.20,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,1,1]; %(size 3xN)
 %add time dependence to dipole moment
 f_start = 100; % start frequency
 f_end = 50; % end frequency
+f_start_out = 50; % start frequency
+f_end_out = 30; % end frequency
 timestep = 0.0001;
 T = 0.05;
 rate_of_change = (f_start - f_end)/T;
+rate_of_change_out=(f_start_out-f_end_out)/T;
 times = timestep:timestep:T;
 for i=(1:3)
     dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+    dip_mom_t_out(i,:) = dip_mom(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
 end
 
-%simulate dipoles
+% %simulate dipoles
+% for i=(1:size(times,2))
+%     phi_in(:,i) = magneticDipole_pointMags(opm_matrix',phi_hat',dip_pos', dip_mom_t(:,i))';
+%     %phi_out(:,i) = magneticDipole(opm_matrix',phi_hat',dip_pos_out', dip_mom_t(:,i))';
+% end
+%phi_0p=phi_in;
+
+% current dipole
 for i=(1:size(times,2))
-    phi_in(:,i) = magneticDipole_pointMags(opm_matrix',phi_hat',dip_pos', dip_mom_t(:,i))';
-    %phi_out(:,i) = magneticDipole(opm_matrix',phi_hat',dip_pos', dip_mom_t(:,i))';
+    phi_in(:,i) = current_dipole_pointmags(opm_matrix, phi_hat, dip_pos, dip_mom_t(:,i));
+    phi_out(:,i) = current_dipole_pointmags(opm_matrix, phi_hat, dip_pos_out, dip_mom_t_out(:,i));
 end
-phi_0p=phi_in;
+phi_0p=phi_in+phi_out;
 
 
 %% reconstrct internal data
 %single in, single out
 [Sin_p,SNin_p] = Sin_vsh_vv([0,0,0]',opm_matrix',R_hat',theta_hat',phi_hat',ch_types,Lin);
 [Sout_p,SNout_p] = Sout_vsh_vv([0,0,0]',opm_matrix',R_hat',theta_hat',phi_hat',ch_types,Lout);
-pS_p=pinv([SNin_p SNout_p]);
+pS_p=pinv([SNin_p,SNout_p]);
 XN_p=pS_p*phi_0p;
 data_rec_vsh_p=real(SNin_p*XN_p(1:size(SNin_p,2),:));
 
@@ -121,17 +132,18 @@ condition_sph_vsh_p = cond([SNin_spm_p SNout_p]);
 
 figure(2);
 hold on;
-plot(times, phi_0p(1,:))
+plot(times, phi_in(1,:))
+plot(times, phi_out(1,:))
 plot(times,data_rec_vsh_p(1,:))
-plot(times,data_rec_multi_vsh_p(1,:))
-plot(times,data_rec_sph_sph_p(1,:))
-plot(times,data_rec_sph_vsh_p(1,:))
+%plot(times,data_rec_multi_vsh_p(1,:))
+%plot(times,data_rec_sph_sph_p(1,:))
+%plot(times,data_rec_sph_vsh_p(1,:))
 title('All SSS Methods, Sandia Helmet Phi, dipole 5cm x')
 xlabel('time')
 ylabel('Ch 1')
 %ylim([-8e-12 8e-12])
-%legend({'Raw Data','VSH/VSH','Spm/Spm'},'location','northwest')
-legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+legend({'Raw Data In','Raw Data Out','VSH/VSH'},'location','northwest')
+%legend({'Raw Data In','Raw Data Out','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
 hold off
 
 

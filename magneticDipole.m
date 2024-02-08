@@ -8,7 +8,6 @@ function magneticFlux = magneticDipole(chanpos,EX,EY,EZ,dip_pos, dip_mom, ch_typ
 % grad_pos_ex: for gradiometers, need EX positions, for OPM sensors this
 %                part of the function is never used
 ch_types=ch_types';
-mu0 = pi*4E-7; 
 mag_size= 21.0e-3;
 weights_mag = [16/81;25/324;25/324;25/324;25/324;10/81;10/81;10/81;10/81];
 d = sqrt(3/5)*(mag_size/2);
