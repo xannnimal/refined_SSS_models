@@ -78,7 +78,7 @@ phi_0p=phi_in+phi_out;
 %single in, single out
 [Sin_p,SNin_p] = Sin_vsh_vv([0,0,0]',opm_matrix',R_hat',theta_hat',phi_hat',ch_types,Lin);
 [Sout_p,SNout_p] = Sout_vsh_vv([0,0,0]',opm_matrix',R_hat',theta_hat',phi_hat',ch_types,Lout);
-pS_p=pinv([SNin_p,SNout_p]);
+pS_p=pinv([SNin_p, SNout_p]);
 XN_p=pS_p*phi_0p;
 data_rec_vsh_p=real(SNin_p*XN_p(1:size(SNin_p,2),:));
 
@@ -138,11 +138,11 @@ plot(times,data_rec_vsh_p(1,:))
 %plot(times,data_rec_multi_vsh_p(1,:))
 %plot(times,data_rec_sph_sph_p(1,:))
 %plot(times,data_rec_sph_vsh_p(1,:))
-title('All SSS Methods, Sandia Helmet Phi, dipole 5cm x')
+title('All SSS Methods, Phi, dipole 5cm x and 20cm')
 xlabel('time')
 ylabel('Ch 1')
 %ylim([-8e-12 8e-12])
-legend({'Raw Data In','Raw Data Out','VSH/VSH'},'location','northwest')
+legend({'Raw Data In','Raw Data Out','VSH/VSH (IN only)'},'location','northwest')
 %legend({'Raw Data In','Raw Data Out','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
 hold off
 
@@ -180,7 +180,7 @@ phi_0t=phi_in;
 %single in, single out
 [Sin_t,SNin_t] = Sin_vsh_vv([0,0,0]',opm_matrix',R_hat',phi_hat',theta_hat',ch_types,Lin);
 [Sout_t,SNout_t] = Sout_vsh_vv([0,0,0]',opm_matrix',R_hat',phi_hat',theta_hat',ch_types,Lout);
-pS_t=pinv([SNin_t SNout_t]);
+pS_t=pinv([SNin_t, SNout_t]);
 XN_t=pS_t*phi_0t;
 data_rec_vsh_t=real(SNin_t*XN_t(1:size(SNin_t,2),:));
 %multi in, vsh out
@@ -230,7 +230,7 @@ ylabel('Ch 1')
 legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
 hold off
 
-
+return
 %% compare sig values
 % [U_t,sig_t,Vt_t]=svd(SNin_tot_t,"econ");
 % [U_p,sig_p,Vt_p]=svd(SNin_tot_p,"econ");

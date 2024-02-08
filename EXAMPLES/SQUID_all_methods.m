@@ -55,7 +55,7 @@ end
 [Sout,SNout] = Sout_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lout);
 
 
-%% generate single dipole simulated data
+%% generate time dependent dipoles
 % for fielf trip generated data
 % dipole_data = single_dipole_sim(R_mag',EZ_mag',dip_pos,dip_mom);
 % phi_0= dipole_data.trial{1,1}(:,:);
@@ -66,29 +66,35 @@ dip_mom = [0,1,1]; %(size 3xN)
 %phi_in= magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom',ch_types)';
 
 %add time dependence to dipole moment
-% f_start = 100; % start frequency
-% f_end = 50; % end frequency
-% timestep = 0.0001;
-% T = 0.05;
-% rate_of_change = (f_start - f_end)/T;
-% times = timestep:timestep:T;
-% for i=(1:3)
-%     dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
-% end
-% 
-% %simulate dipoles
+f_start = 100; % start frequency
+f_end = 50; % end frequency
+timestep = 0.0001;
+T = 0.05;
+rate_of_change = (f_start - f_end)/T;
+times = timestep:timestep:T;
+for i=(1:3)
+    dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+end
+
+%% simulate magnetic dipoles
 % for i=(1:size(times,2))
 %     phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)';
 %     phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t(:,i),ch_types)';
 % end
 % phi_0=phi_in;
 
+
 %% current dipole simulation
 dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
-Q = [0,1,1]; %(size 3xN)
-magneticFlux =current_dipole(R,EX,EY,EZ,dip_pos', Q, ch_types)';
+%Q = [0,1,1]; %(size 3xN)
+%simulate dipoles
+for i=(1:size(times,2))
+    phi_in(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
+    phi_out(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
+end
+phi_0=phi_in;
 
-return
+
 %using Samu's function
 % m=dip_mom';
 % r0=dip_pos';
@@ -191,7 +197,7 @@ check_data_oid_vsh_dmin = min(check_data_oid_vsh_d);
 check_data_oid_vsh_dmax = max(check_data_oid_vsh_d);
 check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
 
-return
+
 
 %% plot data to check
 %plot data from single channel
@@ -202,7 +208,7 @@ return
 figure(2);
 hold on;
 plot(times,phi_0(1,:))
-plot(times,data_rec_vsh(1,:))
+%plot(times,data_rec_vsh(1,:))
 %plot(times,data_rec_multi_vsh(1,:))
 %plot(times,data_rec_sph_sph(1,:))
 %plot(times,data_rec_sph_vsh(1,:))
