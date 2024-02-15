@@ -38,7 +38,7 @@ end
 %calculate spheroidal in/out
 %find semi major and minor
 [semi_major,semi_minor,origin]=find_ellipse_axis(R');
-[Sin_spm_p,Sout_spm_p] = spheroidIN_spheroidOUT(R',EX',EX',EZ',origin,semi_major,semi_minor,Lin,Lout);
+[Sin_spm_p,Sout_spm_p] = spheroidIN_spheroidOUT(R',EZ',origin,semi_major,semi_minor,Lin,Lout);
 
 for j = 1:size(Sin_spm_p,2)
   SNin_spm(:,j) = Sin_spm_p(:,j)/norm(Sin_spm_p(:,j));
@@ -59,41 +59,49 @@ end
 % for fielf trip generated data
 % dipole_data = single_dipole_sim(R_mag',EZ_mag',dip_pos,dip_mom);
 % phi_0= dipole_data.trial{1,1}(:,:);
-
 dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
-dip_pos_out = [0.15,0,0]; %[Rx Ry Rz] (size Nx3)
-dip_mom = [0,1,1]; %(size 3xN)
-%phi_in= magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom',ch_types)';
+dip_pos_out = [0,0.25,0]; %[Rx Ry Rz] (size Nx3)
+dip_mom = [0,1,1]; %(size 3xN
+dip_mom_out = [1,1,1];%(size 3xN)
+%normalize moments so they have magnitude 1
+dip_mom = dip_mom/norm(dip_mom);
+dip_mom_out = dip_mom_out/norm(dip_mom_out);
 
 %add time dependence to dipole moment
 f_start = 100; % start frequency
 f_end = 50; % end frequency
+f_start_out = 50; % start frequency
+f_end_out = 30; % end frequency
 timestep = 0.0001;
 T = 0.05;
 rate_of_change = (f_start - f_end)/T;
+rate_of_change_out=(f_start_out-f_end_out)/T;
 times = timestep:timestep:T;
+
 for i=(1:3)
     dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+    dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
 end
 
-%% simulate magnetic dipoles
-% for i=(1:size(times,2))
-%     phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)';
-%     phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t(:,i),ch_types)';
-% end
-% phi_0=phi_in;
-
-
-%% current dipole simulation
-dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
-%Q = [0,1,1]; %(size 3xN)
-%simulate dipoles
+%current dipole in, magnetic dipole out
 for i=(1:size(times,2))
     phi_in(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
-    phi_out(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
+    %phi_in(:,i) = current_dipole_pointmags(R', EZ', dip_pos, dip_mom_t(:,i))';
+    %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)';
+    %phi_in(:,i) = magneticDipole_pointMags(R,EZ,dip_pos', dip_mom_t(:,i))';  
+    %phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t(:,i),ch_types)';
 end
-phi_0=phi_in;
+phi_0=phi_in; % +phi_out;
 
+% figure(7);
+% hold on
+% scatter3(dip_pos(1),dip_pos(2),dip_pos(3), 'r*')
+% scatter3(dip_pos_out(1),dip_pos_out(2),dip_pos_out(3), 'g*')
+% scatter3(R(1,:),R(2,:),R(3,:))
+% grid on
+% rotate3d
+% view(135, 20);
+% hold off
 
 %using Samu's function
 % m=dip_mom';
@@ -134,6 +142,7 @@ end
 pS_mags=pinv([SNin_mags SNout_mags]);
 XN_mags=pS_mags*phi_mags;
 data_rec_vsh_mags=real(SNin_mags*XN_mags(1:size(SNin_mags,2),:));
+
 %only grads
 pS_grads=pinv([SNin_grads SNout_grads]);
 XN_grads=pS_grads*phi_grads;
@@ -143,6 +152,7 @@ data_rec_vsh_grads=real(SNin_grads*XN_grads(1:size(SNin_grads,2),:));
 pS=pinv([SNin SNout]);
 XN=pS*phi_0;
 data_rec_vsh=real(SNin*XN(1:size(SNin,2),:));
+
 %multi in, vsh out
 pS_multi_vsh=pinv([SNin_tot SNout]);   
 XN_multi_vsh=pS_multi_vsh*phi_0;
@@ -197,6 +207,10 @@ check_data_oid_vsh_dmin = min(check_data_oid_vsh_d);
 check_data_oid_vsh_dmax = max(check_data_oid_vsh_d);
 check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
 
+%do the angles with just the internal and magnetometers
+
+ah_in = subspace(phi_in(3:3:306,:),SNin(3:3:306,:))*180/pi;
+ah_data = subspace(phi_in,data_rec_vsh)*180/pi;
 
 
 %% plot data to check
@@ -207,20 +221,26 @@ check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
 
 figure(2);
 hold on;
-plot(times,phi_0(1,:))
-%plot(times,data_rec_vsh(1,:))
+%plot(times,phi_0(1,:))
+plot(times,phi_in(1,:))
+%plot(times,phi_out(1,:))
+%plot(times,phi_0(1,:))
+plot(times,data_rec_vsh_mags(1,:))
+plot(times,data_rec_vsh_grads(1,:))
+plot(times,data_rec_vsh(1,:))
 %plot(times,data_rec_multi_vsh(1,:))
 %plot(times,data_rec_sph_sph(1,:))
 %plot(times,data_rec_sph_vsh(1,:))
-title('All SSS Methods, Channel 1, Sandia Helmet phi, dipole 5cm x')
+title('SQUID, Currrent Dipole at 5cm x')
 xlabel('time')
-ylabel('MEG0121')
+ylabel('T')
 %ylim([-8e-12 8e-12])
-legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+legend({'Dip In','VSH Mags','VSH Grads', 'VSH/VSH'},'location','northwest')
+%legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
 hold off
 
 
-return
+
 %% quantify differences between SSS methods using subspace angles
 %calculations independent of the type of raw data
 

@@ -41,14 +41,13 @@ function mag_flux = grad(chanpos_i,EX_i,EY_i,EZ_i,dip_pos, Q,weights_grad, D_gra
     for i=1:8
         r_integral = chanpos_i + D_grad(1,i)'*EX_i + D_grad(2,i)'*EY_i;
         r_vec = r_integral - dip_pos;
+        r_hat=norm(r_vec);
         a_vec(i,:)=bsxfun(@minus, r_vec, dip_pos); %r(i,:)-dip_pos;
-        a=norm(a_vec); %magnitude
+        a=norm(a_vec); 
         r=norm(r_vec);
         F = a*(r*a+r^2-dot(dip_pos,r_vec));
         del_F=((1/r)*a^2+(1/a)*dot(a_vec(i,:),r_vec)+2*a+2*r)*r_vec - (a+2*r+(1/a)*dot(a_vec(i,:),r_vec)*dip_pos);
-        Bfield(i,:)= (mu0/(4*pi*F^2))*(cross(F*Q,dip_pos)-dot(cross(Q,dip_pos),r_vec)*del_F);
-        %Bfield2= Q/r_hat^3;
-        B(i,:)= Bfield(i,:);
+        B(i,:)= (mu0/(4*pi*F^2))*(cross(F*Q,dip_pos)-dot(cross(Q,dip_pos),r_vec)*del_F);
     end
     mag_flux = dot(B'*weights_grad,EZ_i');
 end
@@ -59,14 +58,13 @@ function mag_flux = mag(chanpos_i,EX_i,EY_i,EZ_i,dip_pos, Q,weights_mag, D_mag)
     for i=1:9
         r_integral = chanpos_i + D_mag(1,i)'*EX_i + D_mag(2,i)'*EY_i;
         r_vec = r_integral - dip_pos;
+        r_hat=norm(r_vec);
         a_vec(i,:)=bsxfun(@minus, r_vec, dip_pos); %r(i,:)-dip_pos;
         a=norm(a_vec); %magnitude
         r=norm(r_vec);
         F = a*(r*a+r^2-dot(dip_pos,r_vec));
         del_F=((1/r)*a^2+(1/a)*dot(a_vec(i,:),r_vec)+2*a+2*r)*r_vec - (a+2*r+(1/a)*dot(a_vec(i,:),r_vec)*dip_pos);
-        Bfield(i,:)= (mu0/(4*pi*F^2))*(cross(F*Q,dip_pos)-dot(cross(Q,dip_pos),r_vec)*del_F);
-        %Bfield2= Q/r_hat^3;
-        B(i,:)= Bfield(i,:);
+        B(i,:)= (mu0/(4*pi*F^2))*(cross(F*Q,dip_pos)-dot(cross(Q,dip_pos),r_vec)*del_F);
     end
     mag_flux = dot(B'*weights_mag,EZ_i');
 end
