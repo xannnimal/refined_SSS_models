@@ -43,7 +43,7 @@ dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_pos_out = [0,0.2,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,1,1];
 dip_mom_out = [1,1,1];%(size 3xN)
-dip_mom = dip_mom/norm(dip_mom);
+%dip_mom = dip_mom/norm(dip_mom);
 dip_mom_out = dip_mom_out/norm(dip_mom_out);
 
 %add time dependence to dipole moment
@@ -178,7 +178,7 @@ for i=(1:size(times,2))
     phi_in_t(:,i) = magneticDipole_pointMags(opm_matrix',theta_hat',dip_pos', dip_mom_t(:,i))';
     phi_out_t(:,i) = magneticDipole_pointMags(opm_matrix',theta_hat',dip_pos_out', dip_mom_t_out(:,i))';
 end
-phi_0t=phi_in_t+ phi_out_t;
+phi_0t=phi_in_t; %+ phi_out_t;
 
 %% reconstrct internal data
 %single in, single out
@@ -290,7 +290,7 @@ check_data_mvsh_vsh_p = subspace(phi_0p, mVSH_sVSH_p)*180/pi;
 check_data_oid_oid_p = subspace(phi_0p, oid_oid_p)*180/pi;
 check_data_oid_vsh_p = subspace(phi_0p, oid_sVSH_t)*180/pi;
 
-return
+
 for i=(1:80)
     %mVSH In and Spheroid In
     angles_mVSH_oid_t(i)=subspace(SNin_tot_t(:,i),Sin_spm_t)*180/pi;
