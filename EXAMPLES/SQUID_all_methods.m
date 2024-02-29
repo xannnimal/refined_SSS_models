@@ -87,29 +87,33 @@ end
 %current dipole in, magnetic dipole out
 for i=(1:size(times,2))
     phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
-    %phi_in(:,i) = current_dipole_pointmags(R', EZ', dip_pos, dip_mom_t(:,i))';
+    phi_in_c_nt(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom, ch_types)';
+    %phi_in_cp(:,i) = current_dipole_pointmags(R', EZ', dip_pos, dip_mom_t(:,i))';
     phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)';
+    phi_in_nt(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom',ch_types)';
     %phi_in(:,i) = magneticDipole_pointMags(R,EZ,dip_pos', dip_mom_t(:,i))';  
     %phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t(:,i),ch_types)';
 end
 phi_0=phi_in; % +phi_out;
-save("magnetic_dipole.mat",'phi_0')
-save("current_dipole.mat",'phi_in_c')
+%save("magnetic_dipole_notime.mat",'phi_in_nt')
+%save("current_dipole_notime.mat",'phi_in_c_nt')
+%save("time.mat",'times')
+
+%check geometry and dip pos
+figure(7);
+hold on
+% scatter3(dip_pos(1),dip_pos(2),dip_pos(3), 'r*')
+% scatter3(dip_pos_out(1),dip_pos_out(2),dip_pos_out(3), 'g*')
+scatter3(R(1,:),R(2,:),R(3,:))
+quiver3(R(1,:),R(2,:),R(3,:), EX(1,:), EX(2,:), EX(3,:))
+%quiver3(R(1,:),R(2,:),R(3,:), EY(1,:), EY(2,:), EY(3,:))
+title('SQUID- EX')
+grid on
+rotate3d
+view(135, 20);
+hold off
 
 return
-%check geometry and dip pos
-% figure(7);
-% hold on
-% % scatter3(dip_pos(1),dip_pos(2),dip_pos(3), 'r*')
-% % scatter3(dip_pos_out(1),dip_pos_out(2),dip_pos_out(3), 'g*')
-% scatter3(R(1,:),R(2,:),R(3,:))
-% quiver3(R(1,:),R(2,:),R(3,:), EX(1,:), EX(2,:), EX(3,:))
-% % grid on
-% rotate3d
-% view(135, 20);
-% hold off
-
-
 %using Samu's function
 % m=dip_mom';
 % r0=dip_pos';

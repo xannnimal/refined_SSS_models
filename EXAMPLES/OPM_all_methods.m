@@ -15,6 +15,7 @@ filename="headwithsensors1.mat";
 %generate helmet pos and ori with "gen_opm_geometry"
 [opm_matrix,R_hat,theta_hat,phi_hat,ch_types] = gen_opm_geometry(filename);
 
+
 %% SSS expansions- phi
 %speficy sensing direction. SQUID=R_hat or EZ, OPM=Theta or phi hat
 %calculate multi-vsh in and single-vsh out
@@ -69,16 +70,21 @@ for i=(1:size(times,2))
 end
 phi_0p=phi_in; % +phi_out;
 
-% figure(7);
+% figure(6);
 % hold on
-% scatter3(dip_pos(1),dip_pos(2),dip_pos(3), 'r*')
-% scatter3(dip_pos_out(1),dip_pos_out(2),dip_pos_out(3), 'g*')
+% % scatter3(dip_pos(1),dip_pos(2),dip_pos(3), 'r*')
+% % scatter3(dip_pos_out(1),dip_pos_out(2),dip_pos_out(3), 'g*')
 % scatter3(opm_matrix(:,1),opm_matrix(:,2),opm_matrix(:,3))
-% grid on
+% % % scatter3(dip_pos(1),dip_pos(2),dip_pos(3), 'r*')
+% % % scatter3(dip_pos_out(1),dip_pos_out(2),dip_pos_out(3), 'g*')
+% % scatter3(R(1,:),R(2,:),R(3,:))
+% quiver3(opm_matrix(:,1),opm_matrix(:,2),opm_matrix(:,3), theta_hat(:,1), theta_hat(:,2), theta_hat(:,3))
+% quiver3(opm_matrix(:,1),opm_matrix(:,2),opm_matrix(:,3), phi_hat(:,1), phi_hat(:,2), phi_hat(:,3))
+% title('SANDIA OPM Geometry')
+% %grid on
 % rotate3d
 % view(135, 20);
 % hold off
-
 
 
 %% reconstrct internal data
@@ -137,7 +143,7 @@ hold on;
 %plot(times, phi_in(1,:))
 %plot(times, phi_out(1,:))
 plot(times, phi_0p(1,:))
-plot(times,data_rec_vsh_p(1,:))
+%plot(times,data_rec_vsh_p(1,:))
 %plot(times,data_rec_multi_vsh_p(1,:))
 %plot(times,data_rec_sph_sph_p(1,:))
 %plot(times,data_rec_sph_vsh_p(1,:))
@@ -146,9 +152,10 @@ title('Sandia Helmet Phi, dipole 5cm x')
 xlabel('time')
 ylabel('T')
 %ylim([-8e-12 8e-12])
-legend({'B-Dip in','VSH/VSH'},'location','northwest')
+%legend({'B-Dip in','VSH/VSH'},'location','northwest')
 %legend({'Raw','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
 hold off
+return
 
 
 %%%%%%%%%%%%%%%
@@ -226,15 +233,15 @@ hold on;
 % plot(times, phi_out_t(1,:))
 plot(times, phi_0t(1,:))
 plot(times,data_rec_vsh_t(1,:))
-%plot(times,data_rec_multi_vsh_t(1,:))
-%plot(times,data_rec_sph_sph_t(1,:))
-%plot(times,data_rec_sph_vsh_t(1,:))
+plot(times,data_rec_multi_vsh_t(1,:))
+plot(times,data_rec_sph_sph_t(1,:))
+plot(times,data_rec_sph_vsh_t(1,:))
 % title('Raw Data, Sandia Helmet Theta, dipole 5cm x and 20cm')
 title('Sandia Helmet Theta, dipole 5cm x')
 xlabel('time')
 ylabel('T')
-legend({'B-Dip In','VSH/VSH'},'location','northwest')
-%legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+%legend({'B-Dip In','VSH/VSH'},'location','northwest')
+legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
 hold off
 
 
