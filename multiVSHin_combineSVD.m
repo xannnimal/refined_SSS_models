@@ -20,5 +20,6 @@ function [SNin_tot] = multiVSHin_combineSVD(center1, center2,chanpos,ori1,ori2,s
 %if matrix is square, the orthonormal basis calculated by orth(A) matches the matrix U calculated in the singular value decomposition [U,S] = svd(A,"econ")
 [U,sig,Vt]=svd([SNin_1,SNin_2]);
 
+
 SNin_tot=U;
 end

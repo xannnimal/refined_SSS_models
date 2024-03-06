@@ -1,15 +1,12 @@
 %% EXAMPLE: SQUID sensors, multi-origin VSH in, single VSH out
-
-%% constant variables
-import mne.*
-magscale = 100; % Numerical scaling factor between magnetometer and gradiometer signals
+% edited to investigate methods of combining two spheres after ILABS
+% meeting beginning of March
+%% constant variables 
 Lin = 8; % Truncation order of the internal VSH basis
 Lout = 3; % Truncation order of the external VSH basis
 dim_in = (Lin+1)^2 - 1; % Dimension of the internal SSS basis, should be 80
-thresh = 0.98;
-%use optimized centers for two spheres from Eric's code sphere_opt.py
-center1=[-0.00350699, 0.01138051, 0.05947857];
-center2=[-0.00433911, 0.04081329, 0.05194245];
+center1= [-0.00350699, 0.01138051, 0.05947857]; 
+center2= [-0.00433911, 0.04081329, 0.05194245]; 
 %adjuct to device coordinate system
 center1 = center1 - [0,0,0.05];
 center2 = center2 - [0,0,0.05];
@@ -17,44 +14,167 @@ center2 = center2 - [0,0,0.05];
 %% generate SQUID magnetometers
 coordsys = 'device'; 
 rawfile = "sample_audvis_raw.fif";
-[R_mag,EX_mag,EY_mag,EZ_mag,ch_types] = gen_squid_geometry(rawfile, coordsys);
+%for 306 channels, run this
+[R,EX,EY,EZ] = fiff_getpos(rawfile,coordsys);
+for i=(1:size(EX,2))
+    if mod(i,3)==0 %every third is a magnetometer
+        ch_types(i)=1;
+    else
+        ch_types(i)=0;
+    end
+end
+k=1;
+for i=(1:306)
+    if ch_types(i)==1 %every third is a magnetometer
+        mags(k)=i;
+        k=k+1;
+    else
+        k=k;
+    end
+end
+
+
+%% generate time dependent dipoles- current and/or magnetic dipole
+% dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
+% dip_pos_out = [0,0.25,0]; %[Rx Ry Rz] (size Nx3)
+% dip_mom = [0,1,1]; %(size 3xN
+% dip_mom_out = [1,1,1];%(size 3xN)
+% %normalize moments so they have magnitude 1
+% dip_mom = dip_mom/norm(dip_mom);
+% dip_mom_out = dip_mom_out/norm(dip_mom_out);
+% 
+% %add time dependence to dipole moment
+% f_start = 100; % start frequency
+% f_end = 50; % end frequency
+% f_start_out = 50; % start frequency
+% f_end_out = 30; % end frequency
+% timestep = 0.0001;
+% T = 0.05;
+% rate_of_change = (f_start - f_end)/T;
+% rate_of_change_out=(f_start_out-f_end_out)/T;
+% times = timestep:timestep:T;
+% for i=(1:3)
+%     dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+%     dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
+% end
+% 
+% %current dipole in, magnetic dipole out
+% for i=(1:size(times,2))
+%     phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
+%     phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)';
+%     %phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t(:,i),ch_types)';
+% end
+% %phi_0=phi_in;
+
+
+%% for field trip generated data
+% specify grad
+dip_mom=[0 1 0]; % tangential
+freq=2;
+%grad = ft_read_sens(rawfile, 'senstype', 'meg');
+% grad = [];
+% grad.coilpos = matrix;
+% grad.coilori= sensing_dir; 
+% grad.senstype = 'meg';
+% grad.tra= eye(size(matrix,1));
+% for i=1:size(matrix,1)
+%   grad.label{i} = sprintf('OPM%03d', i);
+% end
+cfg                         = [];
+cfg.dataset                 = 'Subject01.ds';
+cfg.trialfun                = 'ft_trialfun_general'; % this is the default
+cfg.trialdef.eventtype      = 'backpanel trigger';
+cfg.trialdef.eventvalue     = [3 5 9]; % the values of the stimulus trigger for the three conditions
+% 3 = fully incongruent (FIC), 5 = initially congruent (IC), 9 = fully congruent (FC)
+cfg.trialdef.prestim        = 1; % in seconds
+cfg.trialdef.poststim       = 2; % in seconds
+
+cfg = ft_definetrial(cfg);
+grad = ft_read_sens('Subject01.ds', 'senstype', 'meg');
+
+return
+% specify cfg using "sourcemodel"
+vol.r = 10;
+vol.o = [0 0 0];
+%The dipoles position and orientation have to be specified with
+cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
+cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
+cfg.sourcemodel.unit       = 'm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
+cfg.dip.frequency = freq;
+cfg.headmodel     = vol; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
+cfg.grad          = grad; %structure with gradiometer definition or filename, see FT_READ_SENS
+
+dipole_data = ft_dipolesimulation(cfg);
+
+%dipole_data = single_dipole_sim(R',EZ',dip_pos,dip_mom',freq);
+phi_0= dipole_data.trial{1,1}(:,:);
+data_times=dipole_data.time{1,1};
+%save("FT_current_dip.mat",'phi_0')
+%save("FT_times.mat",'data_times')
+
 
 %% SSS expansions
-sensing_dir=EZ_mag;
-other_dir=EY_mag;
-[SNin_tot,SNout] = multiVSHin_singleVSHout(center1', center2',R_mag,EX_mag,other_dir,sensing_dir,ch_types,Lin,Lout);
+[Sin,SNin] = Sin_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lin);
+[SNin_tot,SNout] = multiVSHin_singleVSHout(center1', center2',R,EX,EY,EZ,ch_types,Lin,Lout);
+SNin_tot_orth=orth(SNin_tot);
+SNin_tot_orth=SNin_tot_orth(:,1:80);
 
+[~,SNin_1] = Sin_vsh_vv(center1',R,EX,EY,EZ,ch_types,Lin);
+[~,SNin_2] = Sin_vsh_vv(center2',R,EX,EY,EZ,ch_types,Lin);
+%[SNin_tot_svd] = multiVSHin_combineSVD(center1', center2',R,EX,EY,EZ,ch_types,Lin);
+[SNin_tot_svd,sig,~]=svd([SNin_1,SNin_2],'econ');
+%[SNin_tot_orth]=orth([SNin_1,SNin_2]);
+SNin_tot_svd=SNin_tot_svd(:,1:80); %keep first 80 to make it the same size as SNin,SNout
 
-%% generate single dipole simulated data
-dip_pos = [0.01,0,0]; %[Rx Ry Rz] (size Nx3)
-dip_mom = [0,0,1]'; %(size 3xN)
-dipole_data = single_dipole_sim(R_mag',sensing_dir',dip_pos,dip_mom);
-%pick a specific channel
-phi_0= dipole_data.trial{1,1}(:,:);
 
 %% reconstrct internal data
-pS=pinv([SNin_tot SNout]);   
+pS=pinv([SNin SNout]);   
 XN=pS*phi_0;
-data_rec=real(SNin_tot*XN(1:size(SNin_tot,2),:)); 
+data_rec=real(SNin*XN(1:size(SNin,2),:)); 
+
+pS_m=pinv([SNin_tot SNout]);   
+XN_m=pS_m*phi_0;
+data_rec_m=real(SNin_tot*XN_m(1:size(SNin_tot,2),:)); 
+
+pS_mo=pinv([SNin_tot_orth SNout]);   
+XN_mo=pS_mo*phi_0;
+data_rec_orth=real(SNin_tot_orth*XN_mo(1:size(SNin_tot_orth,2),:)); 
+
+pS_svd=pinv([SNin_tot_svd SNout]);   
+XN_svd=pS_svd*phi_0;
+data_rec_svd=real(SNin_tot_svd*XN_svd(1:size(SNin_tot_svd,2),:)); 
+
 %check condition numbers
-condition_in = cond(SNin_tot);
-condition_out= cond(SNout);
-condition_both = cond([SNin_tot SNout]);
+condition_in = cond(SNin);
+condition_in_m = cond(SNin_tot);
+condition_in_orth = cond(SNin_tot_orth);
+condition_in_svd = cond(SNin_tot_svd);
+condition_both = cond([SNin SNout]);
+condition_both_m = cond([SNin_tot SNout]);
+condition_both_orth = cond([SNin_tot_orth SNout]);
+condition_both_svd = cond([SNin_tot_svd SNout]);
+%check subspace angles
+angle_single=subspace(phi_0(:,1),SNin)*180/pi;
+angle_multi=subspace(phi_0(:,1),SNin_tot)*180/pi;
+angle_svd=subspace(phi_0(:,1),SNin_tot_svd)*180/pi;
+angle_orth=subspace(phi_0(:,1),SNin_tot_orth)*180/pi;
 
 %% plot data to check
 %plot data from single channel
 chan_num=1; %3 corresponds to MEG0111
-data_time=dipole_data.time{1,1};
-data_chan_num=dipole_data.trial{1,1}(chan_num,:); 
+%data_chan_num=dipole_data.trial{1,1}(chan_num,:); 
 
-figure(2);
+figure(3);
 hold on;
-plot(data_time(:,1:100), data_chan_num(:,1:100))
-plot(data_time(:,1:100),data_rec(chan_num,1:100))
-title('Two-Origin SSS, Channel 1, 102chan SQUID MEG, dipole 1cm x')
+plot(data_times, phi_0(1,:))
+plot(data_times, data_rec(1,:))
+plot(data_times, data_rec_m(1,:))
+plot(data_times, data_rec_orth(1,:))
+plot(data_times, data_rec_svd(1,:))
+title('testing multi-basis combo methods')
 xlabel('time')
-ylabel('MEG0121')
+ylabel('T')
 %ylim([-8e-12 8e-12])
-legend({'Raw Data','Reconstructed'},'location','northwest')
+legend({'Raw Data','singleVSH','tSSS method', 'tSSS Orth','eSSS method'},'location','northwest')
 hold off
 
