@@ -35,15 +35,12 @@ end
 
 
 %% generate time dependent dipoles- current and/or magnetic dipole
-% dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
+dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
 % dip_pos_out = [0,0.25,0]; %[Rx Ry Rz] (size Nx3)
-% dip_mom = [0,1,1]; %(size 3xN
+dip_mom = [0,1,0]; %(size 3xN
 % dip_mom_out = [1,1,1];%(size 3xN)
-% %normalize moments so they have magnitude 1
-% dip_mom = dip_mom/norm(dip_mom);
-% dip_mom_out = dip_mom_out/norm(dip_mom_out);
-% 
-% %add time dependence to dipole moment
+
+%add time dependence to dipole moment
 % f_start = 100; % start frequency
 % f_end = 50; % end frequency
 % f_start_out = 50; % start frequency
@@ -54,49 +51,68 @@ end
 % rate_of_change_out=(f_start_out-f_end_out)/T;
 % times = timestep:timestep:T;
 % for i=(1:3)
+%     %from FT_dip_sim
 %     dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
-%     dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
+%     %dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
 % end
-% 
+
+%equation used by field trip
+% for i=(1:size(times,2))
+%     dipsignal(i,:) = (cos(f_start*times(i)*2*pi) *dip_mom_t(:,i));% cfg.sourcemodel.amplitude(i);
+% end
+
 % %current dipole in, magnetic dipole out
 % for i=(1:size(times,2))
-%     phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
-%     phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)';
+%     %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
+%     %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)';
 %     %phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t(:,i),ch_types)';
+% 
 % end
 % %phi_0=phi_in;
 
 
 %% for field trip generated data
 % specify grad
-dip_mom=[0 1 0]; % tangential
+%dip_pos = [0.05,0,0];
+%dip_mom=[0 1 0]; % tangential
 freq=2;
-%grad = ft_read_sens(rawfile, 'senstype', 'meg');
-% grad = [];
-% grad.coilpos = matrix;
-% grad.coilori= sensing_dir; 
-% grad.senstype = 'meg';
-% grad.tra= eye(size(matrix,1));
-% for i=1:size(matrix,1)
-%   grad.label{i} = sprintf('OPM%03d', i);
-% end
-cfg                         = [];
-cfg.dataset                 = 'Subject01.ds';
-cfg.trialfun                = 'ft_trialfun_general'; % this is the default
-cfg.trialdef.eventtype      = 'backpanel trigger';
-cfg.trialdef.eventvalue     = [3 5 9]; % the values of the stimulus trigger for the three conditions
-% 3 = fully incongruent (FIC), 5 = initially congruent (IC), 9 = fully congruent (FC)
-cfg.trialdef.prestim        = 1; % in seconds
-cfg.trialdef.poststim       = 2; % in seconds
 
-cfg = ft_definetrial(cfg);
-grad = ft_read_sens('Subject01.ds', 'senstype', 'meg');
+% grad = [];
+% grad.coilpos = R';
+% grad.coilori= EZ'; 
+% grad.senstype = 'meg';
+% grad.tra= eye(size(R',1));
+% for i=1:size(R',1)
+%   labels{i} = sprintf('OPM%03d', i);
+% end
+% grad.label=labels';
+%test grad strucutre by reading in a FT example
+% cfg                         = [];
+% cfg.dataset                 = 'Subject01.ds';
+% cfg.trialfun                = 'ft_trialfun_general'; % this is the default
+% cfg.trialdef.eventtype      = 'backpanel trigger';
+% cfg.trialdef.eventvalue     = [3 5 9]; % the values of the stimulus trigger for the three conditions
+% % 3 = fully incongruent (FIC), 5 = initially congruent (IC), 9 = fully congruent (FC)
+% cfg.trialdef.prestim        = 1; % in seconds
+% cfg.trialdef.poststim       = 2; % in seconds
+% 
+% cfg = ft_definetrial(cfg);
+%grad_subject01 = ft_read_sens('Subject01.ds', 'senstype', 'meg');
+
+%read in sensor information from fif file 
+filename = 'C:/Users/xanmc/OneDrive/Documents/MATLAB/PAPER_CODE/sample_audvis_raw.fif';
+[fid, tree, dir] = fiff_open(filename);
+sens= ft_read_sens(rawfile,'senstype', 'meg', 'filetype','fif');
+grad = ft_read_sens(rawfile, 'senstype', 'meg');
+
+
 
 return
 % specify cfg using "sourcemodel"
-vol.r = 10;
+vol.r = 10; %radius does not many any difference to the outcome so head model
 vol.o = [0 0 0];
 %The dipoles position and orientation have to be specified with
+cfg.method='singlesphere';
 cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
 cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
 cfg.sourcemodel.unit       = 'm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
@@ -105,6 +121,17 @@ cfg.headmodel     = vol; %structure with volume conduction model, see FT_PREPARE
 cfg.grad          = grad; %structure with gradiometer definition or filename, see FT_READ_SENS
 
 dipole_data = ft_dipolesimulation(cfg);
+%also try using "low-level" simulation
+%[lf] = ft_compute_leadfield(dip_pos, grad, vol);
+%code from Dip_sim
+% nsamples = size(dipsignal,2);
+% nchannels = size(lf,1);
+% data.trial = zeros(nchannels,nsamples);
+% for i = 1:3
+%     data.trial = data.trial + ...
+%     lf(:,i:3:end) * (repmat(dip_mom(i:3:end),1,nsamples) .* dipsignal);
+% end
+
 
 %dipole_data = single_dipole_sim(R',EZ',dip_pos,dip_mom',freq);
 phi_0= dipole_data.trial{1,1}(:,:);
@@ -125,6 +152,9 @@ SNin_tot_orth=SNin_tot_orth(:,1:80);
 [SNin_tot_svd,sig,~]=svd([SNin_1,SNin_2],'econ');
 %[SNin_tot_orth]=orth([SNin_1,SNin_2]);
 SNin_tot_svd=SNin_tot_svd(:,1:80); %keep first 80 to make it the same size as SNin,SNout
+
+mag_angle_sVSH = subspace(phi_0(3:3:306,1),SNin(3:3:306,:))*180/pi;
+
 
 
 %% reconstrct internal data
