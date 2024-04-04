@@ -1,6 +1,5 @@
 %% OPM with all recons- Kernal OPM Phantom data
-%https://mne.tools/stable/auto_examples/datasets/kernel_phantom.html
-%In this dataset, a Neuromag phantom was placed inside the Kernel OPM helmet and stimulated with 7 modules active (121 channels). Here we show some example traces.
+%From Eric: audio_ERF_notebook_portal
 clear
 %% constant variables 
 Lin = 8; % Truncation order of the internal VSH basis
@@ -50,13 +49,20 @@ center2 = center2 - [0,0,0.05];
 
 %% Kernel opm data: AKCLEE_110
 coordsys = 'device'; 
-fiff_file = "ERF_Flux_meg.fif";
+filename= 'C:/Users/xanmc/RESEARCH/audio_ERF_notebook_portal/audio_ERF_portal_raw.fif';
 %[R,EX,EY,EZ] = fiff_getpos(file,coord_system,calfile,z_offset)
-[opm_matrix,EX,EY,EZ] = fiff_getpos(fiff_file,coordsys);
+[opm_matrix,EX,EY,EZ] = fiff_getpos(filename,coordsys);
 opm_matrix=opm_matrix';
 R_hat=EZ';
 theta_hat=EX';
 phi_hat=EY';
+
+info = fiff_read_meas_info(filename);
+[raw] = fiff_setup_read_raw(filename);
+[data,times] = fiff_read_raw_segment(raw);
+t_start=50001; %50sec
+t_end=100001;
+phi_0=data(:,50001:100001);
 %check sensor layout and orientations
 % figure(8)
 % hold on
@@ -80,7 +86,6 @@ phi_hat=EY';
 % view(135, 20);
 % hold off
 
-
 for i=(1:size(opm_matrix,1))
     ch_types(i)=1; %model as magnetometers
 end
@@ -93,21 +98,23 @@ end
 
 %read raw from matrix, fif functions not working
 %t_start, t_end = 114.79969620704651, 564.6109187602997 from mne-python
-rawfile='ERF_Flux_meg_matrix.mat';
-raw = load(rawfile);
-raw_data=raw.data(:,30002:111111); %for 10sec (:,28802:30802);
-raw_times=raw.times(30002:111111); %for 10 sec (28802:30802);
-time=raw_times;
-phi_0p=raw_data;
+% rawfile='ERF_Flux_meg_matrix.mat';
+% raw = load(rawfile);
+% raw_data=raw.data(:,30002:111111); %for 10sec (:,28802:30802);
+% raw_times=raw.times(30002:111111); %for 10 sec (28802:30802);
+% time=raw_times;
+% phi_0p=raw_data;
 
 %plot raw
 figure(10);
 hold on;
-plot(raw_times, raw_data)
-title('Kernel OPM Auidio Raw Data')
+plot(times(:,50001:100001), phi_0)
+title('Kernel OPM Auditory Raw Data')
 xlabel('Time')
 ylabel('(T)')
 hold off
+
+return
 
 %% plot evoked
 % figure(1);

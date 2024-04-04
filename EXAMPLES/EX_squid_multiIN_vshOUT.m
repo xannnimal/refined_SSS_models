@@ -13,9 +13,15 @@ center2 = center2 - [0,0,0.05];
 
 %% generate SQUID magnetometers
 coordsys = 'device'; 
-rawfile = "sample_audvis_raw.fif";
+%filename= "C:/Users/xanmc/RESEARCH/audio_ERF_notebook_portal/audio_ERF_portal_raw.fif";
+filename = "C:/Users/xanmc/mne_data/MNE-sample-data/MEG/sample/sample_audvis_raw.fif";
+
+[R,EX,EY,EZ] = fiff_getpos(filename, coordsys);
+info = fiff_read_meas_info(filename);
+[raw] = fiff_setup_read_raw(filename);
+[data,times] = fiff_read_raw_segment(raw);
+return
 %for 306 channels, run this
-[R,EX,EY,EZ] = fiff_getpos(rawfile,coordsys);
 for i=(1:size(EX,2))
     if mod(i,3)==0 %every third is a magnetometer
         ch_types(i)=1;
@@ -77,15 +83,16 @@ dip_mom = [0,1,0]; %(size 3xN
 %dip_mom=[0 1 0]; % tangential
 freq=2;
 
-% grad = [];
-% grad.coilpos = R';
-% grad.coilori= EZ'; 
-% grad.senstype = 'meg';
-% grad.tra= eye(size(R',1));
-% for i=1:size(R',1)
-%   labels{i} = sprintf('OPM%03d', i);
-% end
-% grad.label=labels';
+grad = [];
+grad.coilpos = R';
+grad.coilori= EZ'; 
+grad.senstype = 'meg';
+grad.tra= eye(size(R',1));
+for i=1:size(R',1)
+  labels{i} = sprintf('OPM%03d', i);
+end
+grad.label=labels';
+
 %test grad strucutre by reading in a FT example
 % cfg                         = [];
 % cfg.dataset                 = 'Subject01.ds';
@@ -99,15 +106,6 @@ freq=2;
 % cfg = ft_definetrial(cfg);
 %grad_subject01 = ft_read_sens('Subject01.ds', 'senstype', 'meg');
 
-%read in sensor information from fif file 
-filename = 'C:/Users/xanmc/OneDrive/Documents/MATLAB/PAPER_CODE/sample_audvis_raw.fif';
-[fid, tree, dir] = fiff_open(filename);
-sens= ft_read_sens(rawfile,'senstype', 'meg', 'filetype','fif');
-grad = ft_read_sens(rawfile, 'senstype', 'meg');
-
-
-
-return
 % specify cfg using "sourcemodel"
 vol.r = 10; %radius does not many any difference to the outcome so head model
 vol.o = [0 0 0];
@@ -131,7 +129,6 @@ dipole_data = ft_dipolesimulation(cfg);
 %     data.trial = data.trial + ...
 %     lf(:,i:3:end) * (repmat(dip_mom(i:3:end),1,nsamples) .* dipsignal);
 % end
-
 
 %dipole_data = single_dipole_sim(R',EZ',dip_pos,dip_mom',freq);
 phi_0= dipole_data.trial{1,1}(:,:);

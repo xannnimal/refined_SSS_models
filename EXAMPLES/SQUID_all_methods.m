@@ -12,9 +12,24 @@ center2 = center2 - [0,0,0.05];
 
 %% generate SQUID magnetometers
 coordsys = 'device'; 
-rawfile = "sample_audvis_raw.fif";
-%for 306 channels, run this
-[R,EX,EY,EZ] = fiff_getpos(rawfile,coordsys);
+filename = "C:/Users/xanmc/mne_data/MNE-sample-data/MEG/sample/sample_audvis_raw.fif";
+
+%[R,EX,EY,EZ] = fiff_getpos(filename, coordsys);
+%grad = ft_read_sens(filename, 'senstype', 'meg');
+info = fiff_read_meas_info(filename);
+[raw] = fiff_setup_read_raw(filename);
+[data,times] = fiff_read_raw_segment(raw);
+hdr    = ft_read_header(filename);
+grad = ft_read_sens(filename, 'senstype', 'meg');
+
+%% load coil orientation from fif file
+for i=1:306
+    R(:,i)=info.chs(i).loc(1:3,:);
+    EX(:,i)=info.chs(i).loc(4:6,:);
+    EY(:,i)=info.chs(i).loc(7:9,:);
+    EZ(:,i)=info.chs(i).loc(10:12,:);
+end
+
 for i=(1:size(EX,2))
     if mod(i,3)==0 %every third is a magnetometer
         ch_types(i)=1;
@@ -31,7 +46,6 @@ for i=(1:306)
         k=k;
     end
 end
-
 
 %% SSS expansions- multi origin interior
 %find semi major and minor
@@ -57,63 +71,85 @@ end
 
 
 %% generate time dependent dipoles
-% for fielf trip generated data
-% dipole_data = single_dipole_sim(R_mag',EZ_mag',dip_pos,dip_mom);
-% phi_0= dipole_data.trial{1,1}(:,:);
 dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_pos_out = [0,0.25,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,1,1]; %(size 3xN
 dip_mom_out = [1,1,1];%(size 3xN)
-%normalize moments so they have magnitude 1
-dip_mom = dip_mom/norm(dip_mom);
-dip_mom_out = dip_mom_out/norm(dip_mom_out);
+
+% for field trip generated data
+freq=2;
+%dipole_data = single_dipole_sim(R',EZ',dip_pos,dip_mom,freq);
+% specify grad
+grad = [];
+grad.coilpos = R';
+grad.coilori= EZ'; 
+grad.senstype = 'meg';
+grad.tra= eye(size(R',1));
+grad.label = info.ch_names(1,1:306);
+% for i=1:size(R',1)
+%   grad.label{i} = sprintf('OPM%03d', i);
+% end
+
+% specify cfg using "sourcemodel"
+vol.r = 10;
+vol.o = [0 0 0];
+%The dipoles position and orientation have to be specified with
+cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
+cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
+cfg.sourcemodel.unit       = 'm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
+cfg.dip.frequency = freq;
+cfg.headmodel     = vol; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
+cfg.grad          = grad; %structure with gradiometer definition or filename, see FT_READ_SENS
+
+dipole_data = ft_dipolesimulation(cfg);
+phi_0= dipole_data.trial{1,1}(:,:);
+times = dipole_data.time{1, 1};
 
 %add time dependence to dipole moment
-f_start = 100; % start frequency
-f_end = 50; % end frequency
-f_start_out = 50; % start frequency
-f_end_out = 30; % end frequency
-timestep = 0.0001;
-T = 0.05;
-rate_of_change = (f_start - f_end)/T;
-rate_of_change_out=(f_start_out-f_end_out)/T;
-times = timestep:timestep:T;
-
-for i=(1:3)
-    dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
-    dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
-end
-
-%current dipole in, magnetic dipole out
-for i=(1:size(times,2))
-    phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
-    phi_in_c_nt(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom, ch_types)';
-    %phi_in_cp(:,i) = current_dipole_pointmags(R', EZ', dip_pos, dip_mom_t(:,i))';
-    phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)';
-    phi_in_nt(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom',ch_types)';
-    %phi_in(:,i) = magneticDipole_pointMags(R,EZ,dip_pos', dip_mom_t(:,i))';  
-    %phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t(:,i),ch_types)';
-end
-phi_0=phi_in; % +phi_out;
+% f_start = 100; % start frequency
+% f_end = 50; % end frequency
+% f_start_out = 50; % start frequency
+% f_end_out = 30; % end frequency
+% timestep = 0.0001;
+% T = 0.05;
+% rate_of_change = (f_start - f_end)/T;
+% rate_of_change_out=(f_start_out-f_end_out)/T;
+% times = timestep:timestep:T;
+% 
+% for i=(1:3)
+%     dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+%     dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
+% end
+% 
+% %current dipole in, magnetic dipole out
+% for i=(1:size(times,2))
+%     phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
+%     phi_in_c_nt(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom, ch_types)';
+%     %phi_in_cp(:,i) = current_dipole_pointmags(R', EZ', dip_pos, dip_mom_t(:,i))';
+%     phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)';
+%     phi_in_nt(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom',ch_types)';
+%     %phi_in(:,i) = magneticDipole_pointMags(R,EZ,dip_pos', dip_mom_t(:,i))';  
+%     %phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t(:,i),ch_types)';
+% end
+% phi_0=phi_in; % +phi_out;
 %save("magnetic_dipole_notime.mat",'phi_in_nt')
 %save("current_dipole_notime.mat",'phi_in_c_nt')
 %save("time.mat",'times')
 
 %check geometry and dip pos
-figure(7);
-hold on
-% scatter3(dip_pos(1),dip_pos(2),dip_pos(3), 'r*')
-% scatter3(dip_pos_out(1),dip_pos_out(2),dip_pos_out(3), 'g*')
-scatter3(R(1,:),R(2,:),R(3,:))
-quiver3(R(1,:),R(2,:),R(3,:), EX(1,:), EX(2,:), EX(3,:))
-%quiver3(R(1,:),R(2,:),R(3,:), EY(1,:), EY(2,:), EY(3,:))
-title('SQUID- EX')
-grid on
-rotate3d
-view(135, 20);
-hold off
+% figure(7);
+% hold on
+% % scatter3(dip_pos(1),dip_pos(2),dip_pos(3), 'r*')
+% % scatter3(dip_pos_out(1),dip_pos_out(2),dip_pos_out(3), 'g*')
+% scatter3(R(1,:),R(2,:),R(3,:))
+% quiver3(R(1,:),R(2,:),R(3,:), EX(1,:), EX(2,:), EX(3,:))
+% %quiver3(R(1,:),R(2,:),R(3,:), EY(1,:), EY(2,:), EY(3,:))
+% title('SQUID- EX')
+% grid on
+% rotate3d
+% view(135, 20);
+% hold off
 
-return
 %using Samu's function
 % m=dip_mom';
 % r0=dip_pos';
@@ -197,10 +233,10 @@ oid_sVSH=[SNin_spm,SNout];
 check_data_vsh_vsh_mags = subspace(phi_mags, [SNin_mags SNout_mags])*180/pi;
 check_data_vsh_vsh_grads = subspace(phi_grads, [SNin_grads SNout_grads])*180/pi;
 for i=(1:306)
-    check_data_vsh_vsh_d(i) = subspace(phi_0(:,i), sVSH_sVSH)*180/pi;
-    check_data_mvsh_vsh_d(i) = subspace(phi_0(:,i), mVSH_sVSH)*180/pi;
-    check_data_oid_oid_d(i) = subspace(phi_0(:,i), oid_oid)*180/pi;
-    check_data_oid_vsh_d(i) = subspace(phi_0(:,i), oid_sVSH)*180/pi;
+    check_data_vsh_vsh_d(i) = subspace(phi_0(i,:), sVSH_sVSH)*180/pi;
+    check_data_mvsh_vsh_d(i) = subspace(phi_0(i,:), mVSH_sVSH)*180/pi;
+    check_data_oid_oid_d(i) = subspace(phi_0(i,:), oid_oid)*180/pi;
+    check_data_oid_vsh_d(i) = subspace(phi_0(i,:), oid_sVSH)*180/pi;
 end
 check_data_vsh_vsh_dmin = min(check_data_vsh_vsh_d);
 check_data_vsh_vsh_dmax = max(check_data_vsh_vsh_d);
@@ -218,10 +254,6 @@ check_data_oid_vsh_dmin = min(check_data_oid_vsh_d);
 check_data_oid_vsh_dmax = max(check_data_oid_vsh_d);
 check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
 
-%do the angles with just the internal and magnetometers
-
-ah_in = subspace(phi_in(3:3:306,:),SNin(3:3:306,:))*180/pi;
-ah_data = subspace(phi_in,data_rec_vsh)*180/pi;
 
 
 %% plot data to check
@@ -232,22 +264,22 @@ ah_data = subspace(phi_in,data_rec_vsh)*180/pi;
 
 figure(2);
 hold on;
-%plot(times,phi_0(1,:))
-plot(times,phi_in(1,:))
+plot(times,phi_0(1,:))
+%plot(times,phi_in(1,:))
 %plot(times,phi_out(1,:))
 %plot(times,phi_0(1,:))
-plot(times,data_rec_vsh_mags(1,:))
-plot(times,data_rec_vsh_grads(1,:))
+%plot(times,data_rec_vsh_mags(1,:))
+%plot(times,data_rec_vsh_grads(1,:))
 plot(times,data_rec_vsh(1,:))
-%plot(times,data_rec_multi_vsh(1,:))
+plot(times,data_rec_multi_vsh(1,:))
 %plot(times,data_rec_sph_sph(1,:))
-%plot(times,data_rec_sph_vsh(1,:))
+plot(times,data_rec_sph_vsh(1,:))
 title('SQUID, Currrent Dipole at 5cm x')
 xlabel('time')
 ylabel('T')
 %ylim([-8e-12 8e-12])
-legend({'Dip In','VSH Mags','VSH Grads', 'VSH/VSH'},'location','northwest')
-%legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+%legend({'Dip In','VSH Mags','VSH Grads', 'VSH/VSH'},'location','northwest')
+legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
 hold off
 
 

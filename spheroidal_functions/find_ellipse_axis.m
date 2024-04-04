@@ -13,15 +13,15 @@ v = chanpos;
 vrange = abs((max(v)-min(v)));
 [~,ind]=max(vrange);
 if ind==1
-[ o, r]=spheroid_fit(v,1);
+    [ o, r]=spheroid_fit(v,1);
 end
 
 if ind==2
-[ o, r ]=spheroid_fit(v,2);
+    [ o, r ]=spheroid_fit(v,2);
 end
 
 if ind==3
-[ o, r]=spheroid_fit(v,3);
+    [ o, r]=spheroid_fit(v,3);
 end
 
 % if (ind~=2)
