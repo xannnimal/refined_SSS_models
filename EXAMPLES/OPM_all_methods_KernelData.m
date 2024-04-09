@@ -47,22 +47,41 @@ center2 = center2 - [0,0,0.05];
 %     ch_types(i)=1; %model as magnetometers
 % end
 
-%% Kernel opm data: AKCLEE_110
+%% Kernel opm data: AKCLEE_110 updated April 2024 correct sensor positions
 coordsys = 'device'; 
 filename= 'C:/Users/xanmc/RESEARCH/audio_ERF_notebook_portal/audio_ERF_portal_raw.fif';
 %[R,EX,EY,EZ] = fiff_getpos(file,coord_system,calfile,z_offset)
-[opm_matrix,EX,EY,EZ] = fiff_getpos(filename,coordsys);
-opm_matrix=opm_matrix';
-R_hat=EZ';
-theta_hat=EX';
-phi_hat=EY';
+% [opm_matrix,EX,EY,EZ] = fiff_getpos(filename,coordsys);
+% opm_matrix=opm_matrix';
+% R_hat=EZ';
+% theta_hat=EX';
+% phi_hat=EY';
+% for i=(1:size(opm_matrix,1))
+%     ch_types(i)=1; %model as magnetometers
+% end
 
 info = fiff_read_meas_info(filename);
+nchan=info.nchan;
 [raw] = fiff_setup_read_raw(filename);
 [data,times] = fiff_read_raw_segment(raw);
 t_start=50001; %50sec
 t_end=100001;
 phi_0=data(:,50001:100001);
+for i=1:nchan
+    opm_matrix(:,i)=info.chs(i).loc(1:3,:);
+    EX(:,i)=info.chs(i).loc(4:6,:);
+    EY(:,i)=info.chs(i).loc(7:9,:);
+    EZ(:,i)=info.chs(i).loc(10:12,:);
+end
+
+
+%read evoked
+file= 'C:/Users/xanmc/RESEARCH/audio_ERF_notebook_portal/audio_ERF_portal_evoked.fif';
+[evoked] = fiff_read_evoked(file);
+evoked_data=evoked.evoked.epochs;
+evoked_times = evoked.evoked.times;
+time=evoked.evoked.times;
+
 %check sensor layout and orientations
 % figure(8)
 % hold on
@@ -86,45 +105,27 @@ phi_0=data(:,50001:100001);
 % view(135, 20);
 % hold off
 
-for i=(1:size(opm_matrix,1))
-    ch_types(i)=1; %model as magnetometers
-end
-
-%read evoked data
-% [evoked] = fiff_read_evoked_all('ERF_Flux_meg_evoked.fif');
-% nchan=evoked.info.nchan;
-% time=evoked.evoked.times;
-% phi_0p=evoked.evoked.epochs;
-
-%read raw from matrix, fif functions not working
-%t_start, t_end = 114.79969620704651, 564.6109187602997 from mne-python
-% rawfile='ERF_Flux_meg_matrix.mat';
-% raw = load(rawfile);
-% raw_data=raw.data(:,30002:111111); %for 10sec (:,28802:30802);
-% raw_times=raw.times(30002:111111); %for 10 sec (28802:30802);
-% time=raw_times;
-% phi_0p=raw_data;
 
 %plot raw
 figure(10);
 hold on;
-plot(times(:,50001:100001), phi_0)
+%plot(times(:,50001:100001), phi_0)
+plot(times,data)
 title('Kernel OPM Auditory Raw Data')
+xlabel('Time')
+ylabel('(T)')
+hold off
+
+figure(11);
+hold on;
+plot(evoked_times,evoked_data)
+title('Kernel OPM Auditory Evoked Data')
 xlabel('Time')
 ylabel('(T)')
 hold off
 
 return
 
-%% plot evoked
-% figure(1);
-% hold on;
-% plot(time, phi_0p)
-% %title('Kernel OPM Auidio Evoked Data')
-% title('UCL OPM Auditory')
-% xlabel('Time')
-% ylabel('(T)')
-% hold off
 
 
 %% SSS expansions- phi

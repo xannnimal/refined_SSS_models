@@ -13,14 +13,15 @@ center2 = center2 - [0,0,0.05];
 %% generate SQUID magnetometers
 coordsys = 'device'; 
 filename = "C:/Users/xanmc/mne_data/MNE-sample-data/MEG/sample/sample_audvis_raw.fif";
-
 %[R,EX,EY,EZ] = fiff_getpos(filename, coordsys);
-%grad = ft_read_sens(filename, 'senstype', 'meg');
 info = fiff_read_meas_info(filename);
 [raw] = fiff_setup_read_raw(filename);
 [data,times] = fiff_read_raw_segment(raw);
-hdr    = ft_read_header(filename);
-grad = ft_read_sens(filename, 'senstype', 'meg');
+
+% these do not work, error in FT_FILETYPE
+% hdr    = ft_read_header(name);
+% grad = ft_read_sens(filename, 'senstype', 'meg');
+
 
 %% load coil orientation from fif file
 for i=1:306
@@ -271,15 +272,16 @@ plot(times,phi_0(1,:))
 %plot(times,data_rec_vsh_mags(1,:))
 %plot(times,data_rec_vsh_grads(1,:))
 plot(times,data_rec_vsh(1,:))
-plot(times,data_rec_multi_vsh(1,:))
+%plot(times,data_rec_multi_vsh(1,:))
 %plot(times,data_rec_sph_sph(1,:))
-plot(times,data_rec_sph_vsh(1,:))
+%plot(times,data_rec_sph_vsh(1,:))
 title('SQUID, Currrent Dipole at 5cm x')
 xlabel('time')
 ylabel('T')
 %ylim([-8e-12 8e-12])
 %legend({'Dip In','VSH Mags','VSH Grads', 'VSH/VSH'},'location','northwest')
-legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+%legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+legend({'Raw Data','VSH/VSH'},'location','northwest')
 hold off
 
 
