@@ -13,7 +13,7 @@ center2 = center2 - [0,0,0.05];
 %% generate SQUID magnetometers
 coordsys = 'device'; 
 filename = "C:/Users/xanmc/mne_data/MNE-sample-data/MEG/sample/sample_audvis_raw.fif";
-%[R,EX,EY,EZ] = fiff_getpos(filename, coordsys);
+[R,EX,EY,EZ] = fiff_getpos(filename, coordsys);
 info = fiff_read_meas_info(filename);
 [raw] = fiff_setup_read_raw(filename);
 [data,times] = fiff_read_raw_segment(raw);
@@ -22,6 +22,13 @@ info = fiff_read_meas_info(filename);
 % hdr    = ft_read_header(name);
 % grad = ft_read_sens(filename, 'senstype', 'meg');
 
+S_mne_python = load("C:/Users/xanmc/RESEARCH/compute_max_basis_S.mat");
+R_mne_python = load("C:/Users/xanmc/RESEARCH/R.mat");
+EX_mne_python = load("C:/Users/xanmc/RESEARCH/EX.mat");
+EY_mne_python = load("C:/Users/xanmc/RESEARCH/EY.mat");
+EZ_mne_python = load("C:/Users/xanmc/RESEARCH/EZ.mat");
+
+check_cond = cond(S_mne_python.S);
 
 %% load coil orientation from fif file
 for i=1:306
@@ -68,22 +75,25 @@ end
 [SNin_tot,~] = multiVSHin_singleVSHout(center1', center2',R,EX,EY,EZ,ch_types,Lin,Lout);
 %calculate single in/out
 [Sin,SNin] = Sin_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lin);
+[Sin2,SNin2] = Sin_vsh_vv([0,0,0]',R_mne_python,EX_mne_python,EY_mne_python,EZ_mne_python,ch_types,Lin);
 [Sout,SNout] = Sout_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lout);
 
-
+check = cond(Sin2);
+return
 %% generate time dependent dipoles
-dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
-dip_pos_out = [0,0.25,0]; %[Rx Ry Rz] (size Nx3)
-dip_mom = [0,1,1]; %(size 3xN
-dip_mom_out = [1,1,1];%(size 3xN)
+dip_pos = [5,0,0]; %[Rx Ry Rz] (size Nx3)
+dip_mom = [0,0,1]; %(size 3xN
+% dip_pos_out = [0,0.25,0]; %[Rx Ry Rz] (size Nx3)
+% dip_mom_out = [1,1,1];%(size 3xN)
 
 % for field trip generated data
 freq=2;
 %dipole_data = single_dipole_sim(R',EZ',dip_pos,dip_mom,freq);
 % specify grad
 grad = [];
-grad.coilpos = R';
-grad.coilori= EZ'; 
+grad.chanpos=R'*100; %convert to cm
+grad.coilpos = R'*100;
+grad.coilori= EZ'*100; 
 grad.senstype = 'meg';
 grad.tra= eye(size(R',1));
 grad.label = info.ch_names(1,1:306);
@@ -91,20 +101,28 @@ grad.label = info.ch_names(1,1:306);
 %   grad.label{i} = sprintf('OPM%03d', i);
 % end
 
-% specify cfg using "sourcemodel"
-vol.r = 10;
-vol.o = [0 0 0];
+% create a concentric 3-sphere volume conductor, the radius is the same as for the electrodes
+vol   = [];
+vol.r = 12 * [0.88 0.92 1.00]; % radii of spheres, the head radius is 12 cm
+vol.c = [1 1/80 1];            % conductivity
+vol.o = [0 0 0];               % center of sphere
+% vol.r = 10;
+% vol.o = [0 0 0];
 %The dipoles position and orientation have to be specified with
+cfg=[];
+headmodel = ft_prepare_headmodel(cfg, grad);
 cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
 cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
-cfg.sourcemodel.unit       = 'm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
-cfg.dip.frequency = freq;
-cfg.headmodel     = vol; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
+cfg.sourcemodel.unit       = 'cm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
+cfg.sourcemodel.frequency = freq;
+cfg.unit='cm';
+%cfg.headmodel     = vol; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
 cfg.grad          = grad; %structure with gradiometer definition or filename, see FT_READ_SENS
-
-dipole_data = ft_dipolesimulation(cfg);
-phi_0= dipole_data.trial{1,1}(:,:);
-times = dipole_data.time{1, 1};
+%dipole_data = ft_dipolesimulation(cfg);
+dipole_data = ft_prepare_leadfield(cfg);
+% phi_0= dipole_data.trial{1,1}(:,:);
+% times = dipole_data.time{1, 1};
+return
 
 %add time dependence to dipole moment
 % f_start = 100; % start frequency
