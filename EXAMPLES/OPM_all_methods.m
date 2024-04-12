@@ -50,42 +50,38 @@ mags = 1:1:nchan;
 rs=[0,0,0];
 q=[0,1,0]; %y direction
 r0=[0.05,0,0]; %5cm along x axis
-phi_0p = dipole_field_sarvas(rs',q',r0',opm_matrix',R_hat',theta_hat',phi_hat',mags)';
+%phi_0p = dipole_field_sarvas(rs',q',r0',opm_matrix',R_hat',theta_hat',phi_hat',mags)';
+
+dip_mom_out=[1,0,0];
+dip_pos_out = [0,5,20];
+f_start = 100; % start frequency
+f_end = 50; % end frequency
+f_start_out = 50; % start frequency
+f_end_out = 30; % end frequency
+timestep = 0.0001;
+T = 0.05;
+rate_of_change = (f_start - f_end)/T;
+rate_of_change_out=(f_start_out-f_end_out)/T;
+times = timestep:timestep:T;
+% 
+for i=(1:3)
+    q_t(i,:) = q(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+    dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
+end
+% 
+% %current dipole in, magnetic dipole out
+for i=(1:size(times,2))
+    %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
+    %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
+    phi_out(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e13;
+    phi_inp(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',opm_matrix',R_hat',theta_hat',phi_hat',mags)';
+end
+phi_0p=phi_inp +phi_out;
 
 %field trip dipole sim
 %dipole_data_p = single_dipole_sim(opm_matrix,phi_hat,dip_pos,dip_mom);
 %pick a specific channel
 %phi_0p= dipole_data_p.trial{1,1}(:,:);
-
-% broken dipole functions
-% dip_pos = [0.05,0,0]; %[Rx Ry Rz] (size Nx3)
-% dip_pos_out = [0,0.2,0]; %[Rx Ry Rz] (size Nx3)
-% dip_mom = [0,1,1];
-% dip_mom_out = [1,1,1];%(size 3xN)
-% %dip_mom = dip_mom/norm(dip_mom);
-% dip_mom_out = dip_mom_out/norm(dip_mom_out);
-% 
-% %add time dependence to dipole moment
-% f_start = 200; % start frequency
-% f_end = 50; % end frequency
-% f_start_out = 50; % start frequency
-% f_end_out = 30; % end frequency
-% timestep = 0.0001;
-% T = 0.05;
-% rate_of_change = (f_start - f_end)/T;
-% rate_of_change_out=(f_start_out-f_end_out)/T;
-% times = timestep:timestep:T;
-% for i=(1:3)
-%     dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
-%     dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
-% end
-% OPM sensors are modeled as point mags
-%for i=(1:size(times,2))
-    %phi_in(:,i) = current_dipole_pointmags(opm_matrix, phi_hat, dip_pos, dip_mom_t(:,i));
-    %phi_in(:,i) = magneticDipole_pointMags(opm_matrix',phi_hat',dip_pos', dip_mom_t(:,i))';
-    %phi_out(:,i) = magneticDipole_pointMags(opm_matrix',phi_hat',dip_pos_out', dip_mom_t_out(:,i))';
-%end
-%phi_0p=phi_in; % +phi_out;
 
 %check dipole pos and sensor geometry
 % figure(6);
@@ -151,14 +147,6 @@ cond_mVSH_svd = cond(SNin_tot_svd);
 cond_mVSH_orth = cond(SNin_tot_orth);
 
 
-%calculate the subspace angle between the reconstructed and noiseless original data for one time instant
-% time=10;
-% sub_multi_vsh_p=subspace(phi_0p(:,time),data_rec_multi_vsh_p(:,time))*180/pi;
-% sub_sph_sph_p=subspace(phi_0p(:,time),data_rec_sph_sph_p(:,time))*180/pi;
-% sub_sph_vsh_p=subspace(phi_0p(:,time),data_rec_sph_vsh_p(:,time))*180/pi;
-% sub_vsh_vsh_p=subspace(phi_0p(:,time),data_rec_vsh_p(:,time))*180/pi;
-
-
 
 %% plot data to check
 %plot data from single channel
@@ -170,22 +158,22 @@ cond_mVSH_orth = cond(SNin_tot_orth);
 % end
 
 % figure(2);
-% hold on;
-% %plot(times, phi_in(1,:))
-% %plot(times, phi_out(1,:))
-% plot(times, phi_0p(1,:))
-% %plot(times,data_rec_vsh_p(1,:))
-% %plot(times,data_rec_multi_vsh_p(1,:))
-% %plot(times,data_rec_sph_sph_p(1,:))
-% %plot(times,data_rec_sph_vsh_p(1,:))
-% %title('Raw Data,  Sandia Helmet Phi, dipole 5cm x and 20cm y')
-% title('Sandia Helmet Phi, dipole 5cm x')
-% xlabel('time')
-% ylabel('T')
-% %ylim([-8e-12 8e-12])
-% %legend({'B-Dip in','VSH/VSH'},'location','northwest')
-% %legend({'Raw','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
-% hold off
+hold on;
+plot(times, phi_inp(1,:))
+plot(times, phi_out(1,:))
+plot(times, phi_0p(1,:))
+plot(times,data_rec_vsh_p(1,:))
+plot(times,data_rec_multi_vsh_p(1,:))
+%plot(times,data_rec_sph_sph_p(1,:))
+%plot(times,data_rec_sph_vsh_p(1,:))
+%title('Raw Data,  Sandia Helmet Phi, dipole 5cm x and 20cm y')
+title('Sandia Helmet Phi, dipole 5cm x')
+xlabel('time')
+ylabel('T')
+%ylim([-8e-12 8e-12])
+%legend({'B-Dip in','VSH/VSH'},'location','northwest')
+legend({'In', 'out','Raw','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+hold off
 
 
 %%%%%%%%%%%%%%%
@@ -203,7 +191,14 @@ end
 
 
 %% generate single dipole simulated data
-phi_0t = dipole_field_sarvas(rs',q',r0',opm_matrix',R_hat',phi_hat',theta_hat',mags)';
+%phi_0t = dipole_field_sarvas(rs',q',r0',opm_matrix',R_hat',phi_hat',theta_hat',mags)';
+for i=(1:size(times,2))
+    %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
+    %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
+    phi_outt(:,i) = magneticDipole(opm_matrix',R_hat',phi_hat',theta_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e13;
+    phi_int(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',opm_matrix',R_hat',phi_hat',theta_hat',mags)';
+end
+phi_0t = phi_int+phi_outt;
 
 %old dipole code, broken
 %dipole_data_t = single_dipole_sim(opm_matrix,theta_hat,dip_pos,dip_mom);
@@ -259,22 +254,22 @@ condition_sph_vsh_t = cond([SNin_spm_t SNout_t]);
 %data_time_t=dipole_data_t.time{1,1};
 %data_chan_num_t=dipole_data_t.trial{1,1}(chan_num,:); 
 
-% figure(3);
-% hold on;
-% % plot(times, phi_in_t(1,:))
-% % plot(times, phi_out_t(1,:))
-% plot(times, phi_0t(1,:))
-% plot(times,data_rec_vsh_t(1,:))
-% plot(times,data_rec_multi_vsh_t(1,:))
-% plot(times,data_rec_sph_sph_t(1,:))
-% plot(times,data_rec_sph_vsh_t(1,:))
-% % title('Raw Data, Sandia Helmet Theta, dipole 5cm x and 20cm')
-% title('Sandia Helmet Theta, dipole 5cm x')
-% xlabel('time')
-% ylabel('T')
-% %legend({'B-Dip In','VSH/VSH'},'location','northwest')
-% legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
-% hold off
+figure(3);
+hold on;
+plot(times, phi_int(1,:))
+plot(times, phi_outt(1,:))
+plot(times, phi_0t(1,:))
+plot(times,data_rec_vsh_t(1,:))
+plot(times,data_rec_multi_vsh_t(1,:))
+%plot(times,data_rec_sph_sph_t(1,:))
+%plot(times,data_rec_sph_vsh_t(1,:))
+% title('Raw Data, Sandia Helmet Theta, dipole 5cm x and 20cm')
+title('Sandia Helmet Theta, dipole 5cm x')
+xlabel('time')
+ylabel('T')
+%legend({'B-Dip In','VSH/VSH'},'location','northwest')
+legend({'In','Out','Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+hold off
 
 
 %% compare sig values
@@ -309,34 +304,73 @@ oid_oid_p=[Sin_spm_p,Sout_spm_p];
 oid_sVSH_p=[Sin_spm_p,SNout_p];
 
 %% compare data reconstructions
-angles_mVSH_svd = subspace(phi_0p, SNin_tot_svd)*180/pi;
-angles_mVSH_orth = subspace(phi_0p, SNin_tot_orth)*180/pi;
-
-angles_SNin_t = subspace(phi_0t, SNin_t)*180/pi;
-angles_SNin_tot_t= subspace(phi_0t, SNin_tot_t)*180/pi;
-angles_vsh_vsh_t = subspace(phi_0t, sVSH_sVSH_t)*180/pi;
-angles_mvsh_vsh_t = subspace(phi_0t, mVSH_sVSH_t)*180/pi;
-angles_oid_oid_t = subspace(phi_0t, oid_oid_t)*180/pi;
-angles_oid_vsh_t = subspace(phi_0t, oid_sVSH_t)*180/pi;
-
-angles_SNin_p = subspace(phi_0p, SNin_p)*180/pi;
-angles_SNin_tot_p= subspace(phi_0p, SNin_tot_p)*180/pi;
-angles_vsh_vsh_p = subspace(phi_0p, sVSH_sVSH_p)*180/pi;
-angles_mvsh_vsh_p = subspace(phi_0p, mVSH_sVSH_p)*180/pi;
-angles_oid_oid_p = subspace(phi_0p, oid_oid_p)*180/pi;
-angles_oid_vsh_p = subspace(phi_0p, oid_sVSH_p)*180/pi;
+%for one time point
+% angles_mVSH_svd = subspace(phi_0p, SNin_tot_svd)*180/pi;
+% angles_mVSH_orth = subspace(phi_0p, SNin_tot_orth)*180/pi;
+% 
+% angles_SNin_t = subspace(phi_0t, SNin_t)*180/pi;
+% angles_SNin_tot_t= subspace(phi_0t, SNin_tot_t)*180/pi;
+% angles_vsh_vsh_t = subspace(phi_0t, sVSH_sVSH_t)*180/pi;
+% angles_mvsh_vsh_t = subspace(phi_0t, mVSH_sVSH_t)*180/pi;
+% angles_oid_oid_t = subspace(phi_0t, oid_oid_t)*180/pi;
+% angles_oid_vsh_t = subspace(phi_0t, oid_sVSH_t)*180/pi;
+% 
+% angles_SNin_p = subspace(phi_0p, SNin_p)*180/pi;
+% angles_SNin_tot_p= subspace(phi_0p, SNin_tot_p)*180/pi;
+% angles_vsh_vsh_p = subspace(phi_0p, sVSH_sVSH_p)*180/pi;
+% angles_mvsh_vsh_p = subspace(phi_0p, mVSH_sVSH_p)*180/pi;
+% angles_oid_oid_p = subspace(phi_0p, oid_oid_p)*180/pi;
+% angles_oid_vsh_p = subspace(phi_0p, oid_sVSH_p)*180/pi;
 
 
 %for data with more than 1 time point
-% for i=(1:144)
-%     check_data_vsh_vsh_t(i) = subspace(phi_0t(:,i), sVSH_sVSH_t)*180/pi;
-%     check_data_mvsh_vsh_t(i) = subspace(phi_0t(:,i), mVSH_sVSH_t)*180/pi;
-%     check_data_oid_oid_t(i) = subspace(phi_0t(:,i), oid_oid_t)*180/pi;
-%     check_data_oid_vsh_t(i) = subspace(phi_0t(:,i), oid_sVSH_t)*180/pi;
-% end
-% check_data_vsh_vsh_tmin = min(check_data_vsh_vsh_t);
-% check_data_vsh_vsh_tmax = max(check_data_vsh_vsh_t);
-% check_data_vsh_vsh_tav = mean(check_data_vsh_vsh_t);
+%phi direction
+for i=(1:size(times,2))
+    check_data_vsh_vsh_p(i) = subspace(phi_0p(:,i), sVSH_sVSH_p)*180/pi;
+    check_data_mvsh_vsh_p(i) = subspace(phi_0p(:,i), mVSH_sVSH_p)*180/pi;
+    check_data_oid_oid_p(i) = subspace(phi_0p(:,i), oid_oid_p)*180/pi;
+    check_data_oid_vsh_p(i) = subspace(phi_0p(:,i), oid_sVSH_p)*180/pi;
+end
+check_data_vsh_vsh_pmin = min(check_data_vsh_vsh_p);
+check_data_vsh_vsh_pmax = max(check_data_vsh_vsh_p);
+check_data_vsh_vsh_pav = mean(check_data_vsh_vsh_p);
+
+check_data_mvsh_vsh_pmin = min(check_data_mvsh_vsh_p);
+check_data_mvsh_vsh_pmax = max(check_data_mvsh_vsh_p);
+check_data_mvsh_vsh_pav = mean(check_data_mvsh_vsh_p);
+
+check_data_oid_oid_pmin = min(check_data_oid_oid_p);
+check_data_oid_oid_pmax = max(check_data_oid_oid_p);
+check_data_oid_oid_pav = mean(check_data_oid_oid_p);
+
+check_data_oid_vsh_pmin = min(check_data_oid_vsh_p);
+check_data_oid_vsh_pmax = max(check_data_oid_vsh_p);
+check_data_oid_vsh_pav = mean(check_data_oid_vsh_p);
+
+%theta direction
+for i=(1:size(times,2))
+    check_data_vsh_vsh_t(i) = subspace(phi_0t(:,i), sVSH_sVSH_t)*180/pi;
+    check_data_mvsh_vsh_t(i) = subspace(phi_0t(:,i), mVSH_sVSH_t)*180/pi;
+    check_data_oid_oid_t(i) = subspace(phi_0t(:,i), oid_oid_t)*180/pi;
+    check_data_oid_vsh_t(i) = subspace(phi_0t(:,i), oid_sVSH_t)*180/pi;
+end
+check_data_vsh_vsh_tmin = min(check_data_vsh_vsh_t);
+check_data_vsh_vsh_tmax = max(check_data_vsh_vsh_t);
+check_data_vsh_vsh_tav = mean(check_data_vsh_vsh_t);
+
+check_data_mvsh_vsh_tmin = min(check_data_mvsh_vsh_t);
+check_data_mvsh_vsh_tmax = max(check_data_mvsh_vsh_t);
+check_data_mvsh_vsh_tav = mean(check_data_mvsh_vsh_t);
+
+check_data_oid_oid_tmin = min(check_data_oid_oid_t);
+check_data_oid_oid_tmax = max(check_data_oid_oid_t);
+check_data_oid_oid_tav = mean(check_data_oid_oid_t);
+
+check_data_oid_vsh_tmin = min(check_data_oid_vsh_t);
+check_data_oid_vsh_tmax = max(check_data_oid_vsh_t);
+check_data_oid_vsh_tav = mean(check_data_oid_vsh_t);
+
+
 
 
 return

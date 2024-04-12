@@ -91,7 +91,7 @@ end
 rs=[0,0,0];
 q=[0,1,0]; %y direction
 r0=[0.05,0,0]; %5cm along x axis
-phi_0 = dipole_field_sarvas(rs',q',r0',R,EX,EY,EZ,mags)';
+%phi_0 = dipole_field_sarvas(rs',q',r0',R,EX,EY,EZ,mags)';
 
 %with fieldtrip
 % dip_pos = [5,0,0]; %[Rx Ry Rz] (size Nx3)
@@ -137,32 +137,31 @@ phi_0 = dipole_field_sarvas(rs',q',r0',R,EX,EY,EZ,mags)';
 % % times = dipole_data.time{1, 1};
 
 %add time dependence to dipole moment
-% f_start = 100; % start frequency
-% f_end = 50; % end frequency
-% f_start_out = 50; % start frequency
-% f_end_out = 30; % end frequency
-% timestep = 0.0001;
-% T = 0.05;
-% rate_of_change = (f_start - f_end)/T;
-% rate_of_change_out=(f_start_out-f_end_out)/T;
-% times = timestep:timestep:T;
+dip_mom_out=[1,0,0];
+dip_pos_out = [0,5,20];
+f_start = 100; % start frequency
+f_end = 50; % end frequency
+f_start_out = 50; % start frequency
+f_end_out = 30; % end frequency
+timestep = 0.0001;
+T = 0.05;
+rate_of_change = (f_start - f_end)/T;
+rate_of_change_out=(f_start_out-f_end_out)/T;
+times = timestep:timestep:T;
 % 
-% for i=(1:3)
-%     dip_mom_t(i,:) = dip_mom(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
-%     dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
-% end
+for i=(1:3)
+    q_t(i,:) = q(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+    dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
+end
 % 
 % %current dipole in, magnetic dipole out
-% for i=(1:size(times,2))
-%     phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
-%     phi_in_c_nt(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom, ch_types)';
-%     %phi_in_cp(:,i) = current_dipole_pointmags(R', EZ', dip_pos, dip_mom_t(:,i))';
-%     phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)';
-%     phi_in_nt(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom',ch_types)';
-%     %phi_in(:,i) = magneticDipole_pointMags(R,EZ,dip_pos', dip_mom_t(:,i))';  
-%     %phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t(:,i),ch_types)';
-% end
-% phi_0=phi_in; % +phi_out;
+for i=(1:size(times,2))
+    %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
+    %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
+    phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t_out(:,i),ch_types)'*(1e13);
+    phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R,EX,EY,EZ,mags)';
+end
+phi_0=phi_in +phi_out;
 %save("magnetic_dipole_notime.mat",'phi_in_nt')
 %save("current_dipole_notime.mat",'phi_in_c_nt')
 %save("time.mat",'times')
@@ -259,27 +258,27 @@ angle_oid_sVSH = subspace(phi_0(:,1),oid_sVSH)*180/pi;
 %check data for signals with time 
 % check_data_vsh_vsh_mags = subspace(phi_mags, [SNin_mags SNout_mags])*180/pi;
 % check_data_vsh_vsh_grads = subspace(phi_grads, [SNin_grads SNout_grads])*180/pi;
-% for i=(1:306)
-%     check_data_vsh_vsh_d(i) = subspace(phi_0(i,:), sVSH_sVSH)*180/pi;
-%     check_data_mvsh_vsh_d(i) = subspace(phi_0(i,:), mVSH_sVSH)*180/pi;
-%     check_data_oid_oid_d(i) = subspace(phi_0(i,:), oid_oid)*180/pi;
-%     check_data_oid_vsh_d(i) = subspace(phi_0(i,:), oid_sVSH)*180/pi;
-% end
-% check_data_vsh_vsh_dmin = min(check_data_vsh_vsh_d);
-% check_data_vsh_vsh_dmax = max(check_data_vsh_vsh_d);
-% check_data_vsh_vsh_dav = mean(check_data_vsh_vsh_d);
-% 
-% check_data_mvsh_vsh_dmin = min(check_data_mvsh_vsh_d);
-% check_data_mvsh_vsh_dmax = max(check_data_mvsh_vsh_d);
-% check_data_mvsh_vsh_dav = mean(check_data_mvsh_vsh_d);
-% 
-% check_data_oid_oid_dmin = min(check_data_oid_oid_d);
-% check_data_oid_oid_dmax = max(check_data_oid_oid_d);
-% check_data_oid_oid_dav = mean(check_data_oid_oid_d);
-% 
-% check_data_oid_vsh_dmin = min(check_data_oid_vsh_d);
-% check_data_oid_vsh_dmax = max(check_data_oid_vsh_d);
-% check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
+for i=(1:size(times,2))
+    check_data_vsh_vsh_d(i) = subspace(phi_0(:,i), sVSH_sVSH)*180/pi;
+    check_data_mvsh_vsh_d(i) = subspace(phi_0(:,i), mVSH_sVSH)*180/pi;
+    check_data_oid_oid_d(i) = subspace(phi_0(:,i), oid_oid)*180/pi;
+    check_data_oid_vsh_d(i) = subspace(phi_0(:,i), oid_sVSH)*180/pi;
+end
+check_data_vsh_vsh_dmin = min(check_data_vsh_vsh_d);
+check_data_vsh_vsh_dmax = max(check_data_vsh_vsh_d);
+check_data_vsh_vsh_dav = mean(check_data_vsh_vsh_d);
+
+check_data_mvsh_vsh_dmin = min(check_data_mvsh_vsh_d);
+check_data_mvsh_vsh_dmax = max(check_data_mvsh_vsh_d);
+check_data_mvsh_vsh_dav = mean(check_data_mvsh_vsh_d);
+
+check_data_oid_oid_dmin = min(check_data_oid_oid_d);
+check_data_oid_oid_dmax = max(check_data_oid_oid_d);
+check_data_oid_oid_dav = mean(check_data_oid_oid_d);
+
+check_data_oid_vsh_dmin = min(check_data_oid_vsh_d);
+check_data_oid_vsh_dmax = max(check_data_oid_vsh_d);
+check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
 
 
 
@@ -290,25 +289,24 @@ angle_oid_sVSH = subspace(phi_0(:,1),oid_sVSH)*180/pi;
 % data_chan_num=dipole_data.trial{1,1}(chan_num,:); 
 
 % figure(2);
-% hold on;
-% plot(times,phi_0(1,:))
-% %plot(times,phi_in(1,:))
-% %plot(times,phi_out(1,:))
-% %plot(times,phi_0(1,:))
-% %plot(times,data_rec_vsh_mags(1,:))
-% %plot(times,data_rec_vsh_grads(1,:))
-% plot(times,data_rec_vsh(1,:))
-% %plot(times,data_rec_multi_vsh(1,:))
-% %plot(times,data_rec_sph_sph(1,:))
-% %plot(times,data_rec_sph_vsh(1,:))
-% title('SQUID, Currrent Dipole at 5cm x')
-% xlabel('time')
-% ylabel('T')
-% %ylim([-8e-12 8e-12])
-% %legend({'Dip In','VSH Mags','VSH Grads', 'VSH/VSH'},'location','northwest')
-% %legend({'Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
-% legend({'Raw Data','VSH/VSH'},'location','northwest')
-% hold off
+hold on;
+plot(times,phi_in(1,:))
+plot(times,phi_out(1,:))
+plot(times,phi_0(1,:))
+%plot(times,data_rec_vsh_mags(1,:))
+%plot(times,data_rec_vsh_grads(1,:))
+plot(times,data_rec_vsh(1,:))
+plot(times,data_rec_multi_vsh(1,:))
+%plot(times,data_rec_sph_sph(1,:))
+%plot(times,data_rec_sph_vsh(1,:))
+title('SQUID, Currrent Dipole [5cm,0,0], Magnetic Dipole [0,5cm,20cm]')
+xlabel('Time (sec)')
+ylabel('Dipole Signal (T)')
+%ylim([-8e-12 8e-12])
+%legend({'Dip In','VSH Mags','VSH Grads', 'VSH/VSH'},'location','northwest')
+legend({'Dip In,' 'Dip Out','Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+%legend({'Raw Data','VSH/VSH'},'location','northwest')
+hold off
 
 
 return
