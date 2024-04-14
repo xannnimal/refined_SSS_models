@@ -62,16 +62,17 @@ filename= 'C:/Users/xanmc/RESEARCH/audio_ERF_notebook_portal/audio_ERF_portal_ra
 
 info = fiff_read_meas_info(filename);
 nchan=info.nchan;
+ch_types=ones(nchan,1);
 [raw] = fiff_setup_read_raw(filename);
 [data,times] = fiff_read_raw_segment(raw);
-t_start=50001; %50sec
-t_end=100001;
-phi_0=data(:,50001:100001);
+t_start=206022; %200sec
+t_end=260420; %260
+phi_raw=data(:,t_start:t_end);
 for i=1:nchan
     opm_matrix(:,i)=info.chs(i).loc(1:3,:);
-    EX(:,i)=info.chs(i).loc(4:6,:);
-    EY(:,i)=info.chs(i).loc(7:9,:);
-    EZ(:,i)=info.chs(i).loc(10:12,:);
+    theta_hat(:,i)=info.chs(i).loc(4:6,:);
+    phi_hat(:,i)=info.chs(i).loc(7:9,:);
+    R_hat(:,i)=info.chs(i).loc(10:12,:);
 end
 
 
@@ -79,6 +80,7 @@ end
 file= 'C:/Users/xanmc/RESEARCH/audio_ERF_notebook_portal/audio_ERF_portal_evoked.fif';
 [evoked] = fiff_read_evoked(file);
 evoked_data=evoked.evoked.epochs;
+phi_0p=evoked_data;
 evoked_times = evoked.evoked.times;
 time=evoked.evoked.times;
 
@@ -109,8 +111,7 @@ time=evoked.evoked.times;
 %plot raw
 figure(10);
 hold on;
-%plot(times(:,50001:100001), phi_0)
-plot(times,data)
+plot(times(:,t_start:t_end), phi_raw)
 title('Kernel OPM Auditory Raw Data')
 xlabel('Time')
 ylabel('(T)')
@@ -124,22 +125,19 @@ xlabel('Time')
 ylabel('(T)')
 hold off
 
-return
-
-
 
 %% SSS expansions- phi
 %speficy sensing direction. SQUID=R_hat or EZ, OPM=Theta or phi hat
 %calculate single in single out
-[Sin_p,SNin_p] = Sin_vsh_vv([0,0,0]',opm_matrix',theta_hat',phi_hat',R_hat',ch_types,Lin);
-[Sout_p,SNout_p] = Sout_vsh_vv([0,0,0]',opm_matrix',theta_hat',phi_hat',R_hat',ch_types,Lout);
+[Sin_p,SNin_p] = Sin_vsh_vv([0,0,0]',opm_matrix,theta_hat,phi_hat,R_hat,ch_types,Lin);
+[Sout_p,SNout_p] = Sout_vsh_vv([0,0,0]',opm_matrix,theta_hat,phi_hat,R_hat,ch_types,Lout);
 
 %calculate multi-vsh in and single-vsh out
-[SNin_tot_p,SNout_p] = multiVSHin_singleVSHout(center1', center2',opm_matrix',theta_hat',phi_hat',R_hat',ch_types,Lin,Lout);
+[SNin_tot_p,SNout_p] = multiVSHin_singleVSHout(center1', center2',opm_matrix,theta_hat,phi_hat,R_hat,ch_types,Lin,Lout);
 
 %calculate spheroidal in/out
-[semi_major,semi_minor,origin]=find_ellipse_axis(opm_matrix);
-[Sin_spm_p,Sout_spm_p] = spheroidIN_spheroidOUT(opm_matrix,R_hat,origin,semi_major,semi_minor,Lin,Lout);
+[semi_major,semi_minor,origin]=find_ellipse_axis(opm_matrix');
+[Sin_spm_p,Sout_spm_p] = spheroidIN_spheroidOUT(opm_matrix',R_hat',origin,semi_major,semi_minor,Lin,Lout);
 for j = 1:size(Sin_spm_p,2)
   SNin_spm_p(:,j) = Sin_spm_p(:,j)/norm(Sin_spm_p(:,j));
 end
@@ -189,16 +187,17 @@ condition_sph_vsh_p = cond([SNin_spm_p SNout_p]);
 % hold off
 
 %% plot data to check
-ymin=-5e-11;
-ymax=5e-11;
+ymin=-1.5e-12;
+ymax=1.5e-12;
+chan_num=3;
 
 figure(2);
 hold on;
-plot(time, phi_0p(1,:))
-plot(time,data_rec_vsh_p(1,:))
-plot(time,data_rec_multi_vsh_p(1,:))
-plot(time,data_rec_sph_sph_p(1,:))
-plot(time,data_rec_sph_vsh_p(1,:))
+plot(time, phi_0p(chan_num,:))
+plot(time,data_rec_vsh_p(chan_num,:))
+plot(time,data_rec_multi_vsh_p(chan_num,:))
+plot(time,data_rec_sph_sph_p(chan_num,:))
+plot(time,data_rec_sph_vsh_p(chan_num,:))
 title('All SSS Methods, Kernel OPM Auidio Evoked, R-hat Sensing')
 xlabel('Time')
 ylabel('Mag 1 (T)')
@@ -210,7 +209,7 @@ hold off
 % Create block plots
 figure(6);
 hold on
-t = tiledlayout(2,2); %3
+t = tiledlayout(2,3); %3
 ax1 = nexttile;
 plot(ax1,time,data_rec_vsh_p)
 ylim(ax1,[ymin, ymax])
@@ -220,38 +219,38 @@ plot(ax2,time,data_rec_multi_vsh_p)
 ylim(ax2,[ymin, ymax])
 title(ax2,'mVSH/sVSH')
 ax3=nexttile;
-plot(ax3,time,data_rec_sph_sph_p)
+plot(ax3,time,phi_0p)
 ylim(ax3,[ymin, ymax])
-title(ax3,'Spheroid in/out')
+title(ax3, 'Evoked Data')
 ax4=nexttile;
 plot(ax4,time,data_rec_sph_vsh_p)
 ylim(ax4,[ymin, ymax])
 title(ax4, 'Spheroid/sVSH')
-% ax5=nexttile;
-% plot(ax5,time,phi_0p)
-% ylim(ax5,[ymin, ymax])
-% title(ax5, 'Raw Data')
-title(t, 'Kernel OPM Auidio Evoked, R-hat Sensing')
-xlabel(t,'Time')
-ylabel(t,'T')
+ax5=nexttile;
+plot(ax5,time,data_rec_sph_sph_p)
+ylim(ax5,[ymin, ymax])
+title(ax5,'Spheroid in/out')
+title(t, 'SSS Processed Kernel OPM Auidio Evoked, R-hat Sensing')
+xlabel(t,'Time (sec)')
+ylabel(t,'Evoked Signal (T)')
 % Move plots closer together
 t.TileSpacing = 'compact';
 hold off
 
-return
+
 %% SNR calculations (signal/noise)
-%noise from time -0.2 to -0.05, indicies (1,31), 30
-%peak from time 0.05 to 0.15, indicies (51,71), 20
+%noise from time 0.4 to 0.5, indicies (601,701), 30
+%peak from time 0.11 to 0.21, indicies (311,411), 20
 %If A is a matrix whose columns are random variables and whose rows are observations 
 % then S is a row vector containing the standard deviation corresponding to each column
-std_noise_raw=mean(std(phi_0p(:,1:31))); %each entry is the std of all the channels at 1 time, then average over all time
-std_peak_raw=mean(std(phi_0p(:,51:71)));
+std_noise_raw=mean(std(phi_0p(:,601:701))); %each entry is the std of all the channels at 1 time, then average over all time
+std_peak_raw=mean(std(phi_0p(:,311:411)));
 
 SNR_raw = std_peak_raw/std_noise_raw;
-SNR_vsh_p = mean(std(data_rec_vsh_p(:,51:71)))/mean(std(data_rec_vsh_p(:,1:31)));
-SNR_mvsh_p = mean(std(data_rec_multi_vsh_p(:,51:71)))/mean(std(data_rec_multi_vsh_p(:,1:31)));
-SNR_sphsph_p = mean(std(data_rec_sph_sph_p(:,51:71)))/mean(std(data_rec_sph_sph_p(:,1:31)));
-SNR_sphvsh_p = mean(std(data_rec_sph_vsh_p(:,51:71)))/mean(std(data_rec_sph_vsh_p(:,1:31)));
+SNR_vsh_p = mean(std(data_rec_vsh_p(:,311:411)))/mean(std(data_rec_vsh_p(:,601:701)));
+SNR_mvsh_p = mean(std(data_rec_multi_vsh_p(:,311:411)))/mean(std(data_rec_multi_vsh_p(:,601:701)));
+SNR_sphsph_p = mean(std(data_rec_sph_sph_p(:,311:411)))/mean(std(data_rec_sph_sph_p(:,601:701)));
+SNR_sphvsh_p = mean(std(data_rec_sph_vsh_p(:,311:411)))/mean(std(data_rec_sph_vsh_p(:,601:701)));
 
 
 %% compare data reconstructions
