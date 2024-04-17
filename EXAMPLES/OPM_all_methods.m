@@ -425,6 +425,11 @@ cond_SNout_spm_r= cond(Sout_spm_r);
 condition_sph_sph_r = cond([SNin_spm_r SNout_spm_r]);
 condition_sph_vsh_r = cond([SNin_spm_r SNout_r]);
 
+sVSH_sVSH_r=[SNin_r SNout_r];
+mVSH_sVSH_r=[SNin_tot_r SNout_r];
+oid_oid_r=[Sin_spm_r Sout_spm_r];
+oid_sVSH_r=[Sin_spm_r SNout_r];
+
 for i=(1:size(times,2))
     check_data_vsh_vsh_r(i) = subspace(phi_0r(:,i), sVSH_sVSH_r)*180/pi;
     check_data_mvsh_vsh_r(i) = subspace(phi_0r(:,i), mVSH_sVSH_r)*180/pi;
