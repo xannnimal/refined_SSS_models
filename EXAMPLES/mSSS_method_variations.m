@@ -197,7 +197,7 @@ SNin_tot_orth_k=SNin_tot_orth_k(:,1:80);
 
 % subspace angles 
 for i=(1:size(evoked_times,2))
-    angle_sVSH_k(i) = subspace(phi_0k(:,i),[SNin_k SNout_k])*180/pi;
+    angles_sVSH_k(i) = subspace(phi_0k(:,i),[SNin_k SNout_k])*180/pi;
     angle_mVSH_k(i)=subspace(phi_0k(:,i),[SNin_tot_k SNout_k])*180/pi;
     angle_mVSH_orth_k(i) = subspace(phi_0k(:,i),[SNin_tot_orth_k SNout_k])*180/pi;
     angle_mVSH_svd_k(i) = subspace(phi_0k(:,i),[SNin_tot_svd_k SNout_k])*180/pi;
