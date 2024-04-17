@@ -153,6 +153,70 @@ phi_0t = phi_in_t+phi_out_t;
 % phi_0p = dipole_field_sarvas(rs',q',r0',opm_matrix',R_hat',theta_hat',phi_hat',mags_opm)';
 % phi_0t = dipole_field_sarvas(rs',q',r0',opm_matrix',R_hat',phi_hat',theta_hat',mags_opm)';
 
+
+%% Kernel opm data: AKCLEE_110 updated April 2024 correct sensor positions
+coordsys = 'device'; 
+filename= 'C:/Users/xanmc/RESEARCH/audio_ERF_notebook_portal/audio_ERF_portal_raw.fif';
+info = fiff_read_meas_info(filename);
+nchan_k=info.nchan;
+ch_types_k=ones(nchan_k,1);
+% [raw] = fiff_setup_read_raw(filename);
+% [data,times] = fiff_read_raw_segment(raw);
+% t_start=206022; %200sec
+% t_end=260420; %260
+% phi_raw=data(:,t_start:t_end);
+for i=1:nchan_k
+    opm_matrix_k(:,i)=info.chs(i).loc(1:3,:);
+    theta_hat_k(:,i)=info.chs(i).loc(4:6,:);
+    phi_hat_k(:,i)=info.chs(i).loc(7:9,:);
+    R_hat_k(:,i)=info.chs(i).loc(10:12,:);
+end
+%read evoked
+file= 'C:/Users/xanmc/RESEARCH/audio_ERF_notebook_portal/audio_ERF_portal_evoked.fif';
+[evoked] = fiff_read_evoked(file);
+evoked_data=evoked.evoked.epochs;
+phi_0k=evoked_data;
+evoked_times = evoked.evoked.times;
+time=evoked.evoked.times;
+
+
+%calculate single in single out
+[Sin_k,SNin_k] = Sin_vsh_vv([0,0,0]',opm_matrix_k,theta_hat_k,phi_hat_k,R_hat_k,ch_types_k,Lin);
+[Sout_k,SNout_k] = Sout_vsh_vv([0,0,0]',opm_matrix_k,theta_hat_k,phi_hat_k,R_hat_k,ch_types_k,Lout);
+%calculate multi-vsh in and single-vsh out
+[SNin_tot_k,SNout_k] = multiVSHin_singleVSHout(center1', center2',opm_matrix_k,theta_hat_k,phi_hat_k,R_hat_k,ch_types_k,Lin,Lout);
+%other methods for mVSH: use svd, first 80 singular values
+[~,SNin_1k] = Sin_vsh_vv(center1',opm_matrix_k,R_hat_k,theta_hat_k,phi_hat_k,ch_types_k,Lin);
+[~,SNin_2k] = Sin_vsh_vv(center2',opm_matrix_k,R_hat_k,theta_hat_k,phi_hat_k,ch_types_k,Lin);
+[SNin_tot_svd_k,~,~]=svd([SNin_1k,SNin_2k],'econ');
+SNin_tot_svd_k=SNin_tot_svd_k(:,1:80); 
+%other method: orth of original SNin_tot, keep first 80
+SNin_tot_orth_k=orth(SNin_tot_k);
+SNin_tot_orth_k=SNin_tot_orth_k(:,1:80);
+
+
+% subspace angles 
+for i=(1:size(evoked_times,2))
+    angle_sVSH_k(i) = subspace(phi_0k(:,i),[SNin_k SNout_k])*180/pi;
+    angle_mVSH_k(i)=subspace(phi_0k(:,i),[SNin_tot_k SNout_k])*180/pi;
+    angle_mVSH_orth_k(i) = subspace(phi_0k(:,i),[SNin_tot_orth_k SNout_k])*180/pi;
+    angle_mVSH_svd_k(i) = subspace(phi_0k(:,i),[SNin_tot_svd_k SNout_k])*180/pi;
+end
+
+angle_sVSH_k_min = min(angle_sVSH_k);
+angle_sVSH_k_max = max(angle_sVSH_k);
+angle_sVSH_k_av = mean(angle_sVSH_k);
+angle_mVSH_k_min = min(angle_mVSH_k);
+angle_mVSH_k_max = max(angle_mVSH_k);
+angle_mVSH_k_av = mean(angle_mVSH_k);
+angle_mVSH_k_orth_min = min(angle_mVSH_orth_k);
+angle_mVSH_k_orth_max = max(angle_mVSH_orth_k);
+angle_mVSH_k_orth_av = mean(angle_mVSH_orth_k);
+angle_mVSH_k_svd_min = min(angle_mVSH_svd_k);
+angle_mVSH_k_svd_max = max(angle_mVSH_svd_k);
+angle_mVSH_k_svd_av = mean(angle_mVSH_svd_k);
+
+return
 %% reconstrct internal data- SQUIDS
 pS=pinv([SNin SNout]);   
 XN=pS*phi_0;
