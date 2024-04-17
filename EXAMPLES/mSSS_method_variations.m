@@ -89,34 +89,78 @@ SNin_tot_orth_t=orth(SNin_tot_t);
 SNin_tot_orth_t=SNin_tot_orth_t(:,1:80);
 
 %% check condition numbers
-condition_in = cond(SNin);
-condition_in_m = cond(SNin_tot);
+condition_sVSH = cond(SNin);
+condition_mVSH = cond(SNin_tot);
 condition_in_orth = cond(SNin_tot_orth);
 condition_in_svd = cond(SNin_tot_svd);
-condition_both = cond([SNin SNout]);
-condition_both_m = cond([SNin_tot SNout]);
-condition_both_orth = cond([SNin_tot_orth SNout]);
-condition_both_svd = cond([SNin_tot_svd SNout]);
+
+condition_sVSH_p = cond(SNin_p);
+condition_mVSH_p = cond(SNin_tot_p);
+condition_in_orth_p = cond(SNin_tot_orth_p);
+condition_in_svd_p = cond(SNin_tot_svd_p);
+
+condition_sVSH_t = cond(SNin_t);
+condition_mVSH_t = cond(SNin_tot_t);
+condition_in_orth_t = cond(SNin_tot_orth_t);
+condition_in_svd_t = cond(SNin_tot_svd_t);
 
 
-return
+% condition_both = cond([SNin SNout]);
+% condition_both_m = cond([SNin_tot SNout]);
+% condition_both_orth = cond([SNin_tot_orth SNout]);
+% condition_both_svd = cond([SNin_tot_svd SNout]);
+
+
 %% simulate current dipole
 %current dipole using Samu's implementation of Sarvas
+dip_mom_out=[1,0,0];
+dip_pos_out = [0,5,20];
 rs=[0,0,0];
 q=[0,1,0]; %y direction
 r0=[0.05,0,0]; %5cm along x axis
-phi_0_squid = dipole_field_sarvas(rs',q',r0',R,EX,EY,EZ,mags)';
-phi_0p = dipole_field_sarvas(rs',q',r0',opm_matrix',R_hat',theta_hat',phi_hat',mags_opm)';
+f_start = 100; % start frequency
+f_end = 50; % end frequency
+f_start_out = 50; % start frequency
+f_end_out = 30; % end frequency
+timestep = 0.0001;
+T = 0.05;
+rate_of_change = (f_start - f_end)/T;
+rate_of_change_out=(f_start_out-f_end_out)/T;
+times = timestep:timestep:T;
+% 
+for i=(1:3)
+    q_t(i,:) = q(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+    dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
+end
+% 
+% %current dipole in, magnetic dipole out
+for i=(1:size(times,2))
+    phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t_out(:,i),ch_types)'*(1e13);
+    phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R,EX,EY,EZ,mags)';
+
+    phi_out_p(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e13;
+    phi_in_p(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',opm_matrix',R_hat',theta_hat',phi_hat',mags)';
+
+    phi_out_t(:,i) = magneticDipole(opm_matrix',R_hat',phi_hat',theta_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e13;
+    phi_in_t(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',opm_matrix',R_hat',phi_hat',theta_hat',mags)';
+end
+phi_0=phi_in +phi_out;
+phi_0p = phi_in_p+phi_out_p;
+phi_0t = phi_in_t+phi_out_t;
 
 
-%% reconstrct internal data
+% phi_0 = dipole_field_sarvas(rs',q',r0',R,EX,EY,EZ,mags)';
+% phi_0p = dipole_field_sarvas(rs',q',r0',opm_matrix',R_hat',theta_hat',phi_hat',mags_opm)';
+% phi_0t = dipole_field_sarvas(rs',q',r0',opm_matrix',R_hat',phi_hat',theta_hat',mags_opm)';
+
+%% reconstrct internal data- SQUIDS
 pS=pinv([SNin SNout]);   
 XN=pS*phi_0;
-data_rec=real(SNin*XN(1:size(SNin,2),:)); 
+data_rec_sVSH=real(SNin*XN(1:size(SNin,2),:)); 
 
 pS_m=pinv([SNin_tot SNout]);   
 XN_m=pS_m*phi_0;
-data_rec_m=real(SNin_tot*XN_m(1:size(SNin_tot,2),:)); 
+data_rec_mVSH=real(SNin_tot*XN_m(1:size(SNin_tot,2),:)); 
 
 pS_mo=pinv([SNin_tot_orth SNout]);   
 XN_mo=pS_mo*phi_0;
@@ -126,42 +170,154 @@ pS_svd=pinv([SNin_tot_svd SNout]);
 XN_svd=pS_svd*phi_0;
 data_rec_svd=real(SNin_tot_svd*XN_svd(1:size(SNin_tot_svd,2),:)); 
 
-%%check mags vs grads
-j=1;
-k=1;
-for i=(1:size(R,2))
-    if mod(i,3)==0 %every third is a magnetometer
-        SNin_mags(j,:)=SNin(i,:);
-        SNout_mags(j,:)=SNout(i,:);
-        phi_mags(j,:)=phi_0(i,:);
-        j=j+1;
-    else
-        SNin_grads(k,:)=SNin(i,:);
-        SNout_grads(k,:)=SNout(i,:);
-        phi_grads(k,:)=phi_0(i,:);
-        k=k+1;
-    end
+%% reconstrct internal data- OPM
+%phi-hat
+pSp=pinv([SNin_p SNout_p]);   
+XNp=pSp*phi_0p;
+data_rec_sVSH_p=real(SNin_p*XNp(1:size(SNin_p,2),:)); 
+
+pS_mp=pinv([SNin_tot_p SNout_p]);   
+XN_mp=pS_mp*phi_0p;
+data_rec_mVSH_p=real(SNin_tot_p*XN_mp(1:size(SNin_tot_p,2),:)); 
+
+pS_mop=pinv([SNin_tot_orth_p SNout_p]);   
+XN_mop=pS_mop*phi_0p;
+data_rec_orth_p=real(SNin_tot_orth_p*XN_mop(1:size(SNin_tot_orth_p,2),:)); 
+
+pS_svd_p=pinv([SNin_tot_svd_p SNout_p]);   
+XN_svd_p=pS_svd_p*phi_0p;
+data_rec_svd_p=real(SNin_tot_svd_p*XN_svd_p(1:size(SNin_tot_svd_p,2),:));
+
+%theta-hat
+pSt=pinv([SNin_t SNout_t]);   
+XNt=pSt*phi_0t;
+data_rec_sVSH_t=real(SNin_t*XNt(1:size(SNin_t,2),:)); 
+
+pS_mt=pinv([SNin_tot_t SNout_t]);   
+XN_mt=pS_mt*phi_0t;
+data_rec_mVSH_t=real(SNin_tot_t*XN_mt(1:size(SNin_tot_t,2),:)); 
+
+pS_mot=pinv([SNin_tot_orth_t SNout_t]);   
+XN_mot=pS_mot*phi_0t;
+data_rec_orth_t=real(SNin_tot_orth_t*XN_mot(1:size(SNin_tot_orth_t,2),:)); 
+
+pS_svd_t=pinv([SNin_tot_svd_t SNout_t]);   
+XN_svd_t=pS_svd_t*phi_0t;
+data_rec_svd_t=real(SNin_tot_svd_t*XN_svd_t(1:size(SNin_tot_svd_t,2),:));
+
+
+%% subspace angles
+%SQUID 
+for i=(1:size(times,2))
+    angle_sVSH(i)=subspace(phi_0(:,i),[SNin SNout])*180/pi;
+    angle_mVSH(i)=subspace(phi_0(:,i),[SNin_tot SNout])*180/pi;
+    angle_mVSH_orth(i) = subspace(phi_0(:,i),[SNin_tot_orth SNout])*180/pi;
+    angle_mVSH_svd(i) = subspace(phi_0(:,i),[SNin_tot_svd SNout])*180/pi;
+
+    angle_sVSH_p(i)=subspace(phi_0p(:,i),[SNin_p SNout_p])*180/pi;
+    angle_mVSH_p(i)=subspace(phi_0p(:,i),[SNin_tot_p SNout_p])*180/pi;
+    angle_mVSH_orth_p(i) = subspace(phi_0p(:,i),[SNin_tot_orth_p SNout_p])*180/pi;
+    angle_mVSH_svd_p(i) = subspace(phi_0p(:,i),[SNin_tot_svd_p SNout_p])*180/pi;
+    
+    angle_sVSH_t(i)=subspace(phi_0t(:,i),[SNin_t SNout_t])*180/pi;
+    angle_mVSH_t(i)=subspace(phi_0t(:,i),[SNin_tot_t SNout_t])*180/pi;
+    angle_mVSH_orth_t(i) = subspace(phi_0t(:,i),[SNin_tot_orth_t SNout_t])*180/pi;
+    angle_mVSH_svd_t(i) = subspace(phi_0t(:,i),[SNin_tot_svd_t SNout_t])*180/pi;
 end
-%only mags
-pS_mags=pinv([SNin_mags SNout_mags]);
-XN_mags=pS_mags*phi_mags;
-data_rec_vsh_mags=real(SNin_mags*XN_mags(1:size(SNin_mags,2),:));
 
-%only grads
-pS_grads=pinv([SNin_grads SNout_grads]);
-XN_grads=pS_grads*phi_grads;
-data_rec_vsh_grads=real(SNin_grads*XN_grads(1:size(SNin_grads,2),:));
+angle_sVSH_min = min(angle_sVSH);
+angle_sVSH_max = max(angle_sVSH);
+angle_sVSH_av = mean(angle_sVSH);
+angle_mVSH_min = min(angle_mVSH);
+angle_mVSH_max = max(angle_mVSH);
+angle_mVSH_av = mean(angle_mVSH);
+angle_mVSH_orth_min = min(angle_mVSH_orth);
+angle_mVSH_orth_max = max(angle_mVSH_orth);
+angle_mVSH_orth_av = mean(angle_mVSH_orth);
+angle_mVSH_svd_min = min(angle_mVSH_svd);
+angle_mVSH_svd_max = max(angle_mVSH_svd);
+angle_mVSH_svd_av = mean(angle_mVSH_svd);
+
+angle_sVSH_p_min = min(angle_sVSH_p);
+angle_sVSH_p_max = max(angle_sVSH_p);
+angle_sVSH_p_av = mean(angle_sVSH_p);
+angle_mVSH_p_min = min(angle_mVSH_p);
+angle_mVSH_p_max = max(angle_mVSH_p);
+angle_mVSH_p_av = mean(angle_mVSH_p);
+angle_mVSH_p_orth_min = min(angle_mVSH_orth_p);
+angle_mVSH_p_orth_max = max(angle_mVSH_orth_p);
+angle_mVSH_p_orth_av = mean(angle_mVSH_orth_p);
+angle_mVSH_p_svd_min = min(angle_mVSH_svd_p);
+angle_mVSH_p_svd_max = max(angle_mVSH_svd_p);
+angle_mVSH_p_svd_av = mean(angle_mVSH_svd_p);
+
+angle_sVSH_t_min = min(angle_sVSH_t);
+angle_sVSH_t_max = max(angle_sVSH_t);
+angle_sVSH_t_av = mean(angle_sVSH_t);
+angle_mVSH_t_min = min(angle_mVSH_t);
+angle_mVSH_t_max = max(angle_mVSH_t);
+angle_mVSH_t_av = mean(angle_mVSH_t);
+angle_mVSH_t_orth_min = min(angle_mVSH_orth_t);
+angle_mVSH_t_orth_max = max(angle_mVSH_orth_t);
+angle_mVSH_t_orth_av = mean(angle_mVSH_orth_t);
+angle_mVSH_t_svd_min = min(angle_mVSH_svd_t);
+angle_mVSH_t_svd_max = max(angle_mVSH_svd_t);
+angle_mVSH_t_svd_av = mean(angle_mVSH_svd_t);
+
+%% subpsace angles - SQUID
+% angle_sVSH=subspace(phi_0(:,1),[SNin SNout])*180/pi;
+% angle_mVSH=subspace(phi_0(:,1),[SNin_tot SNout])*180/pi;
+% angle_mVSH_orth = subspace(phi_0(:,1),[SNin_tot_orth SNout])*180/pi;
+% angle_mVSH_svd = subspace(phi_0(:,1),[SNin_tot_svd SNout])*180/pi;
+% 
+% %% subpsace angles - OPM
+% angle_sVSH_p=subspace(phi_0p(:,1),[SNin_p SNout_p])*180/pi;
+% angle_mVSH_p=subspace(phi_0p(:,1),[SNin_tot_p SNout_p])*180/pi;
+% angle_mVSH_orth_p = subspace(phi_0p(:,1),[SNin_tot_orth_p SNout_p])*180/pi;
+% angle_mVSH_svd_p = subspace(phi_0p(:,1),[SNin_tot_svd_p SNout_p])*180/pi;
+% 
+% angle_sVSH_t=subspace(phi_0t(:,1),[SNin_t SNout_t])*180/pi;
+% angle_mVSH_t=subspace(phi_0t(:,1),[SNin_tot_t SNout_t])*180/pi;
+% angle_mVSH_orth_t = subspace(phi_0t(:,1),[SNin_tot_orth_t SNout_t])*180/pi;
+% angle_mVSH_svd_t = subspace(phi_0t(:,1),[SNin_tot_svd_t SNout_t])*180/pi;
 
 
-%check subspace angles
-angle_single=subspace(phi_0(:,1),SNin)*180/pi;
-angle_single_full=subspace(phi_0(:,1),[SNin SNout])*180/pi;
-angle_single_mags = subspace(phi_mags(:,1),SNin_mags)*180/pi;
-angle_single_grads = subspace(phi_grads(:,1),SNin_grads)*180/pi;
-
-angle_multi=subspace(phi_0(:,1),[SNin_tot SNout])*180/pi;
-angle_svd=subspace(phi_0(:,1),SNin_tot_svd)*180/pi;
-angle_orth=subspace(phi_0(:,1),SNin_tot_orth)*180/pi;
+%%check mags vs grads
+% j=1;
+% k=1;
+% for i=(1:size(R,2))
+%     if mod(i,3)==0 %every third is a magnetometer
+%         SNin_mags(j,:)=SNin(i,:);
+%         SNout_mags(j,:)=SNout(i,:);
+%         phi_mags(j,:)=phi_0(i,:);
+%         j=j+1;
+%     else
+%         SNin_grads(k,:)=SNin(i,:);
+%         SNout_grads(k,:)=SNout(i,:);
+%         phi_grads(k,:)=phi_0(i,:);
+%         k=k+1;
+%     end
+% end
+% %only mags
+% pS_mags=pinv([SNin_mags SNout_mags]);
+% XN_mags=pS_mags*phi_mags;
+% data_rec_vsh_mags=real(SNin_mags*XN_mags(1:size(SNin_mags,2),:));
+% 
+% %only grads
+% pS_grads=pinv([SNin_grads SNout_grads]);
+% XN_grads=pS_grads*phi_grads;
+% data_rec_vsh_grads=real(SNin_grads*XN_grads(1:size(SNin_grads,2),:));
+% 
+% 
+% %check subspace angles
+% angle_single=subspace(phi_0(:,1),SNin)*180/pi;
+% angle_single_full=subspace(phi_0(:,1),[SNin SNout])*180/pi;
+% angle_single_mags = subspace(phi_mags(:,1),SNin_mags)*180/pi;
+% angle_single_grads = subspace(phi_grads(:,1),SNin_grads)*180/pi;
+% 
+% angle_multi=subspace(phi_0(:,1),[SNin_tot SNout])*180/pi;
+% angle_svd=subspace(phi_0(:,1),SNin_tot_svd)*180/pi;
+% angle_orth=subspace(phi_0(:,1),SNin_tot_orth)*180/pi;
 
 return
 %% plot data to check
