@@ -15,8 +15,8 @@ coordsys = 'device';
 filename = "C:/Users/xanmc/mne_data/MNE-sample-data/MEG/sample/sample_audvis_raw.fif";
 [R,EX,EY,EZ] = fiff_getpos(filename, coordsys);
 info = fiff_read_meas_info(filename);
-[raw] = fiff_setup_read_raw(filename);
-[data,times] = fiff_read_raw_segment(raw);
+% [raw] = fiff_setup_read_raw(filename);
+% [data,times] = fiff_read_raw_segment(raw);
 
 %check with matricies from python- they match other than -1 bad channel
 % S_mne_python = load("C:/Users/xanmc/RESEARCH/compute_max_basis_SN.mat");
@@ -138,7 +138,7 @@ r0=[0.05,0,0]; %5cm along x axis
 
 %add time dependence to dipole moment
 dip_mom_out=[1,0,0];
-dip_pos_out = [0,5,20];
+dip_pos_out = [0,0,1.5]; %1.5 meters
 f_start = 100; % start frequency
 f_end = 50; % end frequency
 f_start_out = 50; % start frequency
@@ -151,17 +151,17 @@ times = timestep:timestep:T;
 % 
 for i=(1:3)
     q_t(i,:) = q(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
-    dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
+    dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2))*1e9;
 end
 % 
 % %current dipole in, magnetic dipole out
 for i=(1:size(times,2))
     %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
     %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
-    phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t_out(:,i),ch_types)'*(1e13);
+    phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t_out(:,i),ch_types)';
     phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R,EX,EY,EZ,mags)';
 end
-phi_0=phi_in +phi_out;
+phi_0=phi_in+phi_out;
 %save("magnetic_dipole_notime.mat",'phi_in_nt')
 %save("current_dipole_notime.mat",'phi_in_c_nt')
 %save("time.mat",'times')
@@ -290,21 +290,21 @@ check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
 
 % figure(2);
 hold on;
-plot(times,phi_in(1,:))
-plot(times,phi_out(1,:))
-plot(times,phi_0(1,:))
+plot(times(:,1:250),phi_in(1,1:250))
+plot(times(:,1:250),phi_out(1,1:250))
+plot(times(:,1:250),phi_0(1,1:250))
 %plot(times,data_rec_vsh_mags(1,:))
 %plot(times,data_rec_vsh_grads(1,:))
-plot(times,data_rec_vsh(1,:))
-plot(times,data_rec_multi_vsh(1,:))
+plot(times(:,1:250),data_rec_vsh(1,1:250))
+plot(times(:,1:250),data_rec_multi_vsh(1,1:250))
 %plot(times,data_rec_sph_sph(1,:))
 %plot(times,data_rec_sph_vsh(1,:))
-title('SQUID, Currrent Dipole [5cm,0,0], Magnetic Dipole [0,5cm,20cm]')
+title('SQUID, Currrent Dipole [5cm,0,0], Magnetic Dipole [0,0,1.5m]')
 xlabel('Time (sec)')
-ylabel('Dipole Signal (T)')
+ylabel('Dipole Signal, Chan 1 (T)')
 %ylim([-8e-12 8e-12])
 %legend({'Dip In','VSH Mags','VSH Grads', 'VSH/VSH'},'location','northwest')
-legend({'Dip In,' 'Dip Out','Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+legend({'Dip In,' 'Dip Out','Raw Data','VSH/VSH','Multi/VSH'},'location','northwest')
 %legend({'Raw Data','VSH/VSH'},'location','northwest')
 hold off
 

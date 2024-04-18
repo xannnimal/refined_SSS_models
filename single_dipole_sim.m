@@ -23,7 +23,7 @@ vol.o = [0 0 0];
 cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
 cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
 cfg.sourcemodel.unit       = 'm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
-cfg.dip.frequency = freq;
+cfg.sourcemodel.frequency = freq;
 cfg.headmodel     = vol; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
 cfg.grad          = grad; %structure with gradiometer definition or filename, see FT_READ_SENS
 

@@ -53,7 +53,7 @@ r0=[0.05,0,0]; %5cm along x axis
 %phi_0p = dipole_field_sarvas(rs',q',r0',opm_matrix',R_hat',theta_hat',phi_hat',mags)';
 
 dip_mom_out=[1,0,0];
-dip_pos_out = [0,5,20];
+dip_pos_out = [0,0,1.5];
 f_start = 100; % start frequency
 f_end = 50; % end frequency
 f_start_out = 50; % start frequency
@@ -63,17 +63,17 @@ T = 0.05;
 rate_of_change = (f_start - f_end)/T;
 rate_of_change_out=(f_start_out-f_end_out)/T;
 times = timestep:timestep:T;
-% 
+
 for i=(1:3)
     q_t(i,:) = q(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
     dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2));
 end
-% 
-% %current dipole in, magnetic dipole out
+
+%current dipole in, magnetic dipole out
 for i=(1:size(times,2))
     %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
     %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
-    phi_out(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e13;
+    phi_out(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e8;
     phi_inp(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',opm_matrix',R_hat',theta_hat',phi_hat',mags)';
 end
 phi_0p=phi_inp +phi_out;
@@ -195,7 +195,7 @@ end
 for i=(1:size(times,2))
     %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
     %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
-    phi_outt(:,i) = magneticDipole(opm_matrix',R_hat',phi_hat',theta_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e13;
+    phi_outt(:,i) = magneticDipole(opm_matrix',R_hat',phi_hat',theta_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e9;
     phi_int(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',opm_matrix',R_hat',phi_hat',theta_hat',mags)';
 end
 phi_0t = phi_int+phi_outt;
@@ -388,7 +388,7 @@ end
 for i=(1:size(times,2))
     %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
     %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
-    phi_outr(:,i) = magneticDipole(opm_matrix',theta_hat',phi_hat',R_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e13;
+    phi_outr(:,i) = magneticDipole(opm_matrix',theta_hat',phi_hat',R_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e9;
     phi_inr(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',opm_matrix',theta_hat',phi_hat',R_hat',mags)';
 end
 phi_0r = phi_inr+phi_outr;
@@ -451,6 +451,24 @@ check_data_oid_oid_rav = mean(check_data_oid_oid_r);
 check_data_oid_vsh_rmin = min(check_data_oid_vsh_r);
 check_data_oid_vsh_rmax = max(check_data_oid_vsh_r);
 check_data_oid_vsh_rav = mean(check_data_oid_vsh_r);
+
+
+figure(5);
+hold on;
+plot(times, phi_inr(1,:))
+plot(times, phi_outr(1,:))
+plot(times, phi_0r(1,:))
+plot(times,data_rec_vsh_r(1,:))
+plot(times,data_rec_multi_vsh_r(1,:))
+%plot(times,data_rec_sph_sph_t(1,:))
+%plot(times,data_rec_sph_vsh_t(1,:))
+% title('Raw Data, Sandia Helmet Theta, dipole 5cm x and 20cm')
+title('Sandia Helmet R-hat, dipole 5cm x')
+xlabel('time')
+ylabel('T')
+%legend({'B-Dip In','VSH/VSH'},'location','northwest')
+legend({'In','Out','Raw Data','VSH/VSH','Multi/VSH','Spm/Spm','Spm/VSH'},'location','northwest')
+hold off
 
 %%%%%%%%%%%%%% COMPARE SSS basis to themselves %%%%%%%%%%%
 return
