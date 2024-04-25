@@ -17,41 +17,33 @@ center2 = center2 - [0,0,0.05];
 % making a leadfield using the single-sphere headmodel that is
 % produced with CTF software
 %--------------------------------------------------------------------------------------
-
-% read header, which contains the gradiometer description
-hdr  = ft_read_header('Subject01.ds');
-grad = hdr.grad;
-
-% read headshape
-shape = ft_read_headshape('Subject01.shape');
-shape = rmfield(shape, 'fid'); %remove the fiducials->these are stored in MRI-voxel
-
-% read in the single sphere models produced with CTF software
-ctf_ss = ft_read_headmodel('Subject01.hdm');
-
-% plotting the head model together with the head shape
-ft_plot_sens(grad);
-ft_plot_headmodel(ctf_ss, 'facecolor', 'cortex');
-ft_plot_headshape(shape);
-
-% prepare the leadfield for the single sphere model
-cfg                  = [];
-cfg.grad             = grad;
-cfg.headmodel        = ctf_ss;
-cfg.resolution       = 1;
-cfg.unit             = 'cm';
-sourcemodel_ctf_ss   = ft_prepare_leadfield(cfg);
-
-% use the same geometry for the grid in what is to follow
-sourcemodel = removefields(sourcemodel_ctf_ss, {'leadfield', 'leadfielddimord', 'label'});
-
-
-return
-
-
-
-
-
+% 
+% % read header, which contains the gradiometer description
+% hdr  = ft_read_header('Subject01.ds');
+% grad = hdr.grad;
+% 
+% % read headshape
+% shape = ft_read_headshape('Subject01.shape');
+% shape = rmfield(shape, 'fid'); %remove the fiducials->these are stored in MRI-voxel
+% 
+% % read in the single sphere models produced with CTF software
+% ctf_ss = ft_read_headmodel('Subject01.hdm');
+% 
+% % plotting the head model together with the head shape
+% ft_plot_sens(grad);
+% ft_plot_headmodel(ctf_ss, 'facecolor', 'cortex');
+% ft_plot_headshape(shape);
+% 
+% % prepare the leadfield for the single sphere model
+% cfg                  = [];
+% cfg.grad             = grad;
+% cfg.headmodel        = ctf_ss;
+% cfg.resolution       = 1;
+% cfg.unit             = 'cm';
+% sourcemodel_ctf_ss   = ft_prepare_leadfield(cfg);
+% 
+% % use the same geometry for the grid in what is to follow
+% sourcemodel = removefields(sourcemodel_ctf_ss, {'leadfield', 'leadfielddimord', 'label'});
 
 %% generate SQUID magnetometers
 coordsys = 'device'; 
@@ -149,13 +141,10 @@ cfg.sourcemodel.frequency = freq;
 cfg.unit='cm';
 cfg.headmodel     = headmodel; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
 cfg.grad          = grad; %structzure with gradiometer definition or filename, see FT_READ_SENS
-%dipole_data = ft_dipolesimulation(cfg);
 dipole_data = ft_prepare_leadfield(cfg);
-% phi_0= dipole_data.trial{1,1}(:,:);
-% times = dipole_data.time{1, 1};
+
 
 return
-
 %old dipole code
 % dip_pos_out = [0,0.25,0]; %[Rx Ry Rz] (size Nx3)
 % dip_mom = [0,1,1]; %(size 3xN

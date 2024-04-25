@@ -10,6 +10,7 @@ center2= [-0.00433911, 0.04081329, 0.05194245];
 center1 = center1 - [0,0,0.05];
 center2 = center2 - [0,0,0.05];
 
+
 %% generate SQUID magnetometers
 coordsys = 'device'; 
 filename = "C:/Users/xanmc/mne_data/MNE-sample-data/MEG/sample/sample_audvis_raw.fif";
@@ -162,6 +163,10 @@ for i=(1:size(times,2))
     phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R,EX,EY,EZ,mags)';
 end
 phi_0=phi_in+phi_out;
+%add gaussian noise at 10 percent of max value of phi_0
+[mValue , vIndex] = max(max(phi_0));
+rand = randn(size(phi_0,1),size(phi_0,2));
+
 %save("magnetic_dipole_notime.mat",'phi_in_nt')
 %save("current_dipole_notime.mat",'phi_in_c_nt')
 %save("time.mat",'times')
@@ -180,7 +185,7 @@ phi_0=phi_in+phi_out;
 % view(135, 20);
 % hold off
 
-
+return
 %% reconstrct internal data
 %%check mags vs grads
 j=1;

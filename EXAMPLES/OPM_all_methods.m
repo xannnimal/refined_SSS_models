@@ -10,6 +10,7 @@ center2= [-0.00433911, 0.04081329, 0.05194245];
 center1 = center1 - [0,0,0.05];
 center2 = center2 - [0,0,0.05];
 
+
 %% opm geometry from Peter at SANDIA
 filename="headwithsensors1.mat";
 %generate helmet pos and ori with "gen_opm_geometry"
