@@ -4,7 +4,7 @@ function magneticFlux = magneticDipole_pointMags(chanpos,coilori,dip_pos, dip_mo
 % Assumes point magnetometers as the channel type ONLY- for OPM
 % dip_mom: magnetic moment 1x3
 % dip_pos: position vector, from the center of the magnetic dipole to where the magnetic field is measured
-% chanpos:  3xnhan channel position matrix nchanx3
+% chanpos:  3xnchan channel position matrix 
 % coilori: the orientation/measuring direction of the sensors
 scale = 1.0e-7; 
 

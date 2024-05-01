@@ -40,7 +40,7 @@ end
 % Note that this MRI volume is defined in CTF-convention coordinate space (ALS), rather than the fif-file’s RAS coordinate system (for the head coordinates).
 % I would do the following:
 
-mri = ft_read_mri(Subject01.mri);
+mri = ft_read_mri('Subject01.mri');
 mri.coordsys = 'ctf'; % just to be sure, it could be that this has been already added by the reading function
 mri = ft_convert_coordsys(mri, 'neuromag');
 %++++
@@ -54,32 +54,21 @@ headmodel = ft_prepare_headmodel(cfg, segmentedmri);
 headmodel = ft_convert_units(headmodel, 'cm');
 
 
-
-dip_pos = [5,0,0]; %[Rx Ry Rz] (size Nx3)
-dip_mom = [0,1,0]; %(size 3xN
+dip_pos = [5,0,7]; %[Rx Ry Rz] (size Nx3)
+dip_mom = [1,1,0]; %(size 3xN
 freq=2;
 grad = [];
 % +++++++++
 % w.r.t. the above, I would recommend to do this:
 % 
-coilaccuracy =0;
-grad = ft_read_sens(filename, 'coilaccuracy', coilaccuracy); % with coilaccuracy being 0, 1 or 2.
-% 
-% This will return a fieldtrip-style definition of the sensor array, and avoid a lot of low-level hassle downstream.
-% 
-% ================
-% grad.chanpos=R'*100; %convert to cm
-% grad.coilpos = R'*100;
-% grad.coilori= EZ';
-% grad.senstype = 'meg';
-% grad.tra= eye(size(R',1));
-% grad.label = info.ch_names(1,1:306);
-
+rawfile = 'sample_audvis_raw.fif';
+hdr = ft_read_header(rawfile);
+grad = ft_read_sens(rawfile, 'senstype', 'meg', 'coilaccuracy', 1); % with coilaccuracy being 0, 1 or 2.
 
 cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
 cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
 cfg.sourcemodel.unit       = 'cm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
-cfg.sourcemodel.frequency = freq; 
+cfg.sourcemodel.inside = true(size(cfg.sourcemodel.pos,1),1);
 cfg.unit='cm';
 cfg.headmodel     = headmodel; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
 cfg.grad          = grad; %structzure with gradiometer definition or filename, see FT_READ_SENS
