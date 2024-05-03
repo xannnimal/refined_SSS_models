@@ -12,14 +12,15 @@ filename="headwithsensors1.mat";
 
 %% SSS expansions- multi origin interior
 %speficy sensing direction. SQUID=R_hat or EZ, OPM=Theta or phi hat
-sensing_dir=phi_hat;
-other_dir=theta_hat;
+sensing_dir=theta_hat;
+other_dir2 = phi_hat;
+other_dir1=R_hat;
 %find major and minor axis of spheroidal ellipse
 %Y must be the longest axis of opm_matrix
 [semi_major,semi_minor,origin]=find_ellipse_axis(opm_matrix);
 %calculate spheroidal in and single-vsh out
 %matrix,chan_ori,semi_major,semi_minor,Lin,Lout
-[Sin_spm,Sout_spm] = spheroidIN_spheroidOUT(opm_matrix,phi_hat,origin,semi_major,semi_minor,Lin,Lout);
+[Sin_spm,Sout_spm] = spheroidIN_spheroidOUT(opm_matrix,sensing_dir,origin,semi_major,semi_minor,Lin,Lout);
 for j = 1:size(Sin_spm,2)
   SNin_spm(:,j) = Sin_spm(:,j)/norm(Sin_spm(:,j));
 end
@@ -29,9 +30,9 @@ for j = 1:size(Sout_spm,2)
 end
 
 %% generate single dipole simulated data
-dip_pos = [0.01,0,0]; %[Rx Ry Rz] (size Nx3)
-dip_mom = [0,0,1]; %(size 3xN)
-phi_0 = dipole_field_sarvas_pointmags(rs,q,r0,R,NX,NY,NZ);
+dip_pos = [5,0,0]; %[Rx Ry Rz] (size Nx3)
+dip_mom = [0,1,0]; %(size 3xN)
+phi_0 = dipole_field_sarvas_pointmags([0,0,0]',dip_mom',dip_pos',opm_matrix',other_dir1',other_dir2',sensing_dir')';
 %phi_0 = magneticDipole_pointMags(opm_matrix',sensing_dir',dip_pos', dip_mom')';
 %dipole_data = single_dipole_sim(opm_matrix,sensing_dir,dip_pos,dip_mom);
 %pick a specific channel
