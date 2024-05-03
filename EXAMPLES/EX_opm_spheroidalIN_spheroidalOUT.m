@@ -31,7 +31,8 @@ end
 %% generate single dipole simulated data
 dip_pos = [0.01,0,0]; %[Rx Ry Rz] (size Nx3)
 dip_mom = [0,0,1]; %(size 3xN)
-phi_0 = magneticDipole_pointMags(opm_matrix',sensing_dir',dip_pos', dip_mom')';
+phi_0 = dipole_field_sarvas_pointmags(rs,q,r0,R,NX,NY,NZ);
+%phi_0 = magneticDipole_pointMags(opm_matrix',sensing_dir',dip_pos', dip_mom')';
 %dipole_data = single_dipole_sim(opm_matrix,sensing_dir,dip_pos,dip_mom);
 %pick a specific channel
 %phi_0= dipole_data.trial{1,1}(:,:);

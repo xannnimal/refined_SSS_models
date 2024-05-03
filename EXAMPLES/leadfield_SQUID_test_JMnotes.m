@@ -47,6 +47,7 @@ mri = ft_convert_coordsys(mri, 'neuromag');
 cfg           = [];
 cfg.output    = 'brain';
 segmentedmri  = ft_volumesegment(cfg, mri);
+save segmentedmri segmentedmri
 
 cfg = [];
 cfg.method='singleshell';

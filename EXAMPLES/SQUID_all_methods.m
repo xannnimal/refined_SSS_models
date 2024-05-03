@@ -13,31 +13,14 @@ center2 = center2 - [0,0,0.05];
 
 %% generate SQUID magnetometers
 coordsys = 'device'; 
-filename = "C:/Users/xanmc/mne_data/MNE-sample-data/MEG/sample/sample_audvis_raw.fif";
-[R,EX,EY,EZ] = fiff_getpos(filename, coordsys);
-info = fiff_read_meas_info(filename);
-% [raw] = fiff_setup_read_raw(filename);
-% [data,times] = fiff_read_raw_segment(raw);
+rawfile = 'sample_audvis_raw.fif';
+[R,EX,EY,EZ] = fiff_getpos(rawfile, coordsys);
+info = fiff_read_meas_info(rawfile);
+grad = ft_read_sens(rawfile, 'coordsys', 'dewar', 'senstype', 'meg', 'coilaccuracy', 0); % with coilaccuracy being 0, 1 or 2.
+EZ=grad.chanori';
+R=grad.chanpos';
 
-%check with matricies from python- they match other than -1 bad channel
-% S_mne_python = load("C:/Users/xanmc/RESEARCH/compute_max_basis_SN.mat");
-% R_mne_python = load("C:/Users/xanmc/RESEARCH/R.mat");
-% EX_mne_python = load("C:/Users/xanmc/RESEARCH/EX.mat");
-% EY_mne_python = load("C:/Users/xanmc/RESEARCH/EY.mat");
-% EZ_mne_python = load("C:/Users/xanmc/RESEARCH/EZ.mat");
-% check_cond = cond(S_mne_python.S);
-% [U,sig,V]= svd(S_mne_python.S,'econ');
-% sig = diag(sig);
-
-% load coil orientation from fif file
-% for i=1:306
-%     R(:,i)=info.chs(i).loc(1:3,:);
-%     EX(:,i)=info.chs(i).loc(4:6,:);
-%     EY(:,i)=info.chs(i).loc(7:9,:);
-%     EZ(:,i)=info.chs(i).loc(10:12,:);
-% end
-
-for i=(1:size(EX,2))
+for i=(1:size(EZ,2))
     if mod(i,3)==0 %every third is a magnetometer
         ch_types(i)=1;
     else
@@ -80,96 +63,80 @@ end
 
 %% generate dependent dipoles
 %current dipole using Samu's implementation of Sarvas
-k=1;
-for i=(1:306)
-    if ch_types(i)==1 %every third is a magnetometer
-        mags(k)=i;
-        k=k+1;
-    else
-        k=k;
-    end
-end
-rs=[0,0,0];
-q=[0,1,0]; %y direction
-r0=[0.05,0,0]; %5cm along x axis
-%phi_0 = dipole_field_sarvas(rs',q',r0',R,EX,EY,EZ,mags)';
-
-%with fieldtrip
-% dip_pos = [5,0,0]; %[Rx Ry Rz] (size Nx3)
-% dip_mom = [0,0,1]; %(size 3xN
-% % dip_pos_out = [0,0.25,0]; %[Rx Ry Rz] (size Nx3)
-% % dip_mom_out = [1,1,1];%(size 3xN)
+% k=1;
+% for i=(1:306)
+%     if ch_types(i)==1 %every third is a magnetometer
+%         mags(k)=i;
+%         k=k+1;
+%     else
+%         k=k;
+%     end
+% end
+% rs=[0,0,0];
+% q=[0,1,0]; %y direction
+% r0=[0.05,0,0]; %5cm along x axis
+% %phi_0 = dipole_field_sarvas(rs',q',r0',R,EX,EY,EZ,mags)';
 % 
-% % for field trip generated data
-% freq=2;
-% %dipole_data = single_dipole_sim(R',EZ',dip_pos,dip_mom,freq);
-% % specify grad
-% grad = [];
-% grad.chanpos=R'*100; %convert to cm
-% grad.coilpos = R'*100;
-% grad.coilori= EZ'*100; 
-% grad.senstype = 'meg';
-% grad.tra= eye(size(R',1));
-% grad.label = info.ch_names(1,1:306);
-% % for i=1:size(R',1)
-% %   grad.label{i} = sprintf('OPM%03d', i);
-% % end
-% 
-% % create a concentric 3-sphere volume conductor, the radius is the same as for the electrodes
-% vol   = [];
-% vol.r = 12 * [0.88 0.92 1.00]; % radii of spheres, the head radius is 12 cm
-% vol.c = [1 1/80 1];            % conductivity
-% vol.o = [0 0 0];               % center of sphere
-% % vol.r = 10;
-% % vol.o = [0 0 0];
-% %The dipoles position and orientation have to be specified with
-% cfg=[];
-% headmodel = ft_prepare_headmodel(cfg, grad);
-% cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
-% cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
-% cfg.sourcemodel.unit       = 'cm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
-% cfg.sourcemodel.frequency = freq;
-% cfg.unit='cm';
-% %cfg.headmodel     = vol; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
-% cfg.grad          = grad; %structure with gradiometer definition or filename, see FT_READ_SENS
-% %dipole_data = ft_dipolesimulation(cfg);
-% dipole_data = ft_prepare_leadfield(cfg);
-% % phi_0= dipole_data.trial{1,1}(:,:);
-% % times = dipole_data.time{1, 1};
-
-%add time dependence to dipole moment
-dip_mom_out=[1,0,0];
-dip_pos_out = [0,0,1.5]; %1.5 meters
-f_start = 100; % start frequency
-f_end = 50; % end frequency
-f_start_out = 50; % start frequency
-f_end_out = 30; % end frequency
-timestep = 0.0001;
-T = 0.05;
-rate_of_change = (f_start - f_end)/T;
-rate_of_change_out=(f_start_out-f_end_out)/T;
-times = timestep:timestep:T;
-% 
-for i=(1:3)
-    q_t(i,:) = q(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
-    dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2))*1e9;
-end
-% 
-% %current dipole in, magnetic dipole out
-for i=(1:size(times,2))
-    %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
-    %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
-    phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t_out(:,i),ch_types)';
-    phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R,EX,EY,EZ,mags)';
-end
-phi_0=phi_in+phi_out;
+% %add time dependence to dipole moment
+% dip_mom_out=[1,0,0];
+% dip_pos_out = [0,0,1.5]; %1.5 meters
+% f_start = 100; % start frequency
+% f_end = 50; % end frequency
+% f_start_out = 50; % start frequency
+% f_end_out = 30; % end frequency
+% timestep = 0.0001;
+% T = 0.05;
+% rate_of_change = (f_start - f_end)/T;
+% rate_of_change_out=(f_start_out-f_end_out)/T;
+% times = timestep:timestep:T;
+% % 
+% for i=(1:3)
+%     q_t(i,:) = q(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+%     dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2))*1e9;
+% end
+% % 
+% % %current dipole in, magnetic dipole out
+% for i=(1:size(times,2))
+%     %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
+%     %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
+%     phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t_out(:,i),ch_types)';
+%     phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R,EX,EY,EZ,mags)';
+% end
+%phi_0=phi_in+phi_out;
 %add gaussian noise at 10 percent of max value of phi_0
-[mValue , vIndex] = max(max(phi_0));
-rand = randn(size(phi_0,1),size(phi_0,2));
+% [mValue , vIndex] = max(max(phi_0));
+% rand = randn(size(phi_0,1),size(phi_0,2));
 
-%save("magnetic_dipole_notime.mat",'phi_in_nt')
-%save("current_dipole_notime.mat",'phi_in_c_nt')
-%save("time.mat",'times')
+
+%% use FieldTrip leadfield
+% mri = ft_read_mri('Subject01.mri');
+% mri.coordsys = 'ctf'; % just to be sure, it could be that this has been already added by the reading function
+% mri = ft_convert_coordsys(mri, 'neuromag');
+% cfg           = [];
+% cfg.output    = 'brain';
+% segmentedmri  = ft_volumesegment(cfg, mri);
+% save segmentedmri segmentedmri
+seg = load("segmentedmri.mat");
+segmentedmri = seg.segmentedmri;
+cfg = [];
+cfg.method='singleshell';
+headmodel = ft_prepare_headmodel(cfg, segmentedmri);
+headmodel = ft_convert_units(headmodel, 'cm');
+dip_pos = [5,0,7]; %[Rx Ry Rz] (size Nx3)
+dip_mom = [1,1,0]; %(size 3xN
+
+grad = ft_read_sens(rawfile, 'senstype', 'meg', 'coilaccuracy', 1); % with coilaccuracy being 0, 1 or 2.
+
+cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
+cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
+cfg.sourcemodel.unit       = 'cm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
+cfg.sourcemodel.inside = true(size(cfg.sourcemodel.pos,1),1);
+cfg.unit='cm';
+cfg.reducerank      = 2;
+cfg.headmodel     = headmodel; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
+cfg.grad          = grad; %structzure with gradiometer definition or filename, see FT_READ_SENS
+sim_data = ft_prepare_leadfield(cfg);
+dipole_data = dipole_data.leadfield{1, 1};
 
 %check geometry and dip pos
 % figure(7);
