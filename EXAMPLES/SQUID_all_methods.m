@@ -136,7 +136,7 @@ cfg.reducerank      = 2;
 cfg.headmodel     = headmodel; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
 cfg.grad          = grad; %structzure with gradiometer definition or filename, see FT_READ_SENS
 sim_data = ft_prepare_leadfield(cfg);
-dipole_data = dipole_data.leadfield{1, 1};
+dipole_data = sim_data.leadfield{1, 1};
 
 %check geometry and dip pos
 % figure(7);

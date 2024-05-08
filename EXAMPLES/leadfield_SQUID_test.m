@@ -1,61 +1,45 @@
-%% generate SQUID magnetometers
-coordsys = 'device'; 
-rawfile = "sample_audvis_raw.fif";
-filename = "C:/Users/xanmc/mne_data/MNE-sample-data/MEG/sample/sample_audvis_raw.fif";
-info = fiff_read_meas_info(filename);
-[raw] = fiff_setup_read_raw(filename);
-[data,times] = fiff_read_raw_segment(raw);
-%for 306 channels, run this
-[R,EX,EY,EZ] = fiff_getpos(rawfile,coordsys);
-for i=(1:size(EX,2))
-    if mod(i,3)==0 %every third is a magnetometer
-        ch_types(i)=1;
-    else
-        ch_types(i)=0;
-    end
-end
-k=1;
-for i=(1:306)
-    if ch_types(i)==1 %every third is a magnetometer
-        mags(k)=i;
-        k=k+1;
-    else
-        k=k;
-    end
-end
+%% use FieldTrip leadfield
+rawfile = 'sample_audvis_raw.fif'; % from MNE-Python
+% need some mri anatomy, can load from an example, but I have the egmented
+% mri saved as a file so you don't have to uncomment this part
+% mri = ft_read_mri('Subject01.mri');
+% mri.coordsys = 'ctf'; % just to be sure, it could be that this has been already added by the reading function
+% mri = ft_convert_coordsys(mri, 'neuromag');
+% cfg           = [];
+% cfg.output    = 'brain';
+% segmentedmri  = ft_volumesegment(cfg, mri);
 
-
-mri = ft_read_mri('Subject01.mri');
-
-cfg           = [];
-cfg.output    = 'brain';
-segmentedmri  = ft_volumesegment(cfg, mri);
-
+% load the preprocessed mri
+seg = load("segmentedmri.mat");
+segmentedmri = seg.segmentedmri;
 cfg = [];
 cfg.method='singleshell';
 headmodel = ft_prepare_headmodel(cfg, segmentedmri);
 headmodel = ft_convert_units(headmodel, 'cm');
 
-dip_pos = [5,0,0]; %[Rx Ry Rz] (size Nx3)
-dip_mom = [0,1,0]; %(size 3xN
-freq=2;
-grad = [];
-grad.chanpos=R'*100; %convert to cm
-grad.coilpos = R'*100;
-grad.coilori= EZ'*100; 
-grad.senstype = 'meg';
-grad.tra= eye(size(R',1));
-grad.label = info.ch_names(1,1:306);
-grad = ft_datatype_sens(grad);
+% for multiple dipoles, make these a num_dipole x 3 matrix
+dip_pos = [5,0,7]; %in centimeters
+dip_mom = [1,1,0]; 
 
-cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
-cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
-cfg.sourcemodel.unit       = 'cm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
-cfg.sourcemodel.frequency = freq;
+% load the sensor poitions from 'sample_audvis_raw.fif'
+grad = ft_read_sens(rawfile, 'coordsys', 'dewar', 'senstype', 'meg', 'coilaccuracy', 0); % with coilaccuracy being 0, 1 or 2.
+%EZ=grad.chanori'; %for reference, these are the data structures used in the SSS calcs
+%R=grad.chanpos';
+
+% create FieldTrip configuration
+cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz]
+cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] 
+cfg.sourcemodel.unit       = 'cm'; %string, can be 'mm', 'cm', 'm'
+cfg.sourcemodel.inside = true(size(cfg.sourcemodel.pos,1),1); %assert the dipoles are inside the head
 cfg.unit='cm';
+cfg.reducerank      = 2;
 cfg.headmodel     = headmodel; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
 cfg.grad          = grad; %structzure with gradiometer definition or filename, see FT_READ_SENS
-dipole_data = ft_prepare_leadfield(cfg);
 
-%try computing lf this way
-[lf] = ft_compute_leadfield(dip_pos, grad, headmodel);
+%generate simulated leadfield
+sim_data = ft_prepare_leadfield(cfg);
+dipole_data = sim_data.leadfield{1, 1};
+
+% I'm waiting to hear back from Jan to confirm this, but I think the output
+% "dipole_data" needs to be dotted into the sensing direction of each
+% sensor to get the actual magnetic flux, so like: dipole_data(i,:)*EZ(i,:)

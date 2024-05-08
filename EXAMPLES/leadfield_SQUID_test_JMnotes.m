@@ -5,7 +5,6 @@ filename = "C:/Users/xanmc/mne_data/MNE-sample-data/MEG/sample/sample_audvis_raw
 info = fiff_read_meas_info(filename);
 [raw] = fiff_setup_read_raw(filename);
 [data,times] = fiff_read_raw_segment(raw);
-%for 306 channels, run this
 [R,EX,EY,EZ] = fiff_getpos(rawfile,coordsys);
 for i=(1:size(EX,2))
     if mod(i,3)==0 %every third is a magnetometer

@@ -59,7 +59,7 @@ for i = 1:8
    na = norm(a);
    nr = norm(rint);
    F = na*(nr*na + nr^2 - dot(r0,rint));
-   NABLA_F = ((1/nr)*na^2 + (1/na)*dot(a,rint) + 2*na + 2*nr)*rint - ...
+   NABLA_F = ((1/nr)*na^2 + (1/na)*dot(a,rint) +  2*na + 2*nr)*rint - ...
    (na + 2*nr + (1/na)*dot(a,rint))*r0;
    qr = cross(q,r0);
    B(:,i) = (F*qr - dot(qr,rint)*NABLA_F)/F^2;
