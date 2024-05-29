@@ -16,7 +16,7 @@ coordsys = 'device';
 rawfile = 'sample_audvis_raw.fif';
 [R,EX,EY,EZ] = fiff_getpos(rawfile, coordsys);
 info = fiff_read_meas_info(rawfile);
-grad = ft_read_sens(rawfile, 'coordsys', 'dewar', 'senstype', 'meg', 'coilaccuracy', 0); % with coilaccuracy being 0, 1 or 2.
+grad = ft_read_sens(rawfile, 'coordsys', 'dewar', 'senstype', 'meg', 'coilaccuracy', 2); % with coilaccuracy being 0, 1 or 2.
 EZ=grad.chanori';
 R=grad.chanpos';
 
@@ -63,49 +63,52 @@ end
 
 %% generate dependent dipoles
 %current dipole using Samu's implementation of Sarvas
-% k=1;
-% for i=(1:306)
-%     if ch_types(i)==1 %every third is a magnetometer
-%         mags(k)=i;
-%         k=k+1;
-%     else
-%         k=k;
-%     end
-% end
-% rs=[0,0,0];
-% q=[0,1,0]; %y direction
-% r0=[0.05,0,0]; %5cm along x axis
-% %phi_0 = dipole_field_sarvas(rs',q',r0',R,EX,EY,EZ,mags)';
+k=1;
+for i=(1:306)
+    if ch_types(i)==1 %every third is a magnetometer
+        mags(k)=i;
+        k=k+1;
+    else
+        k=k;
+    end
+end
+rs=[0,0,0];
+q=[0,1,0]; %y direction
+r0=[0.05,0,0]; %5cm along x axis
+%phi_0 = dipole_field_sarvas(rs',q',r0',R,EX,EY,EZ,mags)';
+
+%add time dependence to dipole moment
+dip_mom_out=[1,0,0];
+dip_pos_out = [0,0,1.5]; %1.5 meters
+f_start = 100; % start frequency
+f_end = 50; % end frequency
+f_start_out = 50; % start frequency
+f_end_out = 30; % end frequency
+timestep = 0.0001;
+T = 0.05;
+rate_of_change = (f_start - f_end)/T;
+rate_of_change_out=(f_start_out-f_end_out)/T;
+times = timestep:timestep:T;
 % 
-% %add time dependence to dipole moment
-% dip_mom_out=[1,0,0];
-% dip_pos_out = [0,0,1.5]; %1.5 meters
-% f_start = 100; % start frequency
-% f_end = 50; % end frequency
-% f_start_out = 50; % start frequency
-% f_end_out = 30; % end frequency
-% timestep = 0.0001;
-% T = 0.05;
-% rate_of_change = (f_start - f_end)/T;
-% rate_of_change_out=(f_start_out-f_end_out)/T;
-% times = timestep:timestep:T;
-% % 
-% for i=(1:3)
-%     q_t(i,:) = q(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
-%     dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2))*1e9;
-% end
-% % 
-% % %current dipole in, magnetic dipole out
-% for i=(1:size(times,2))
-%     %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
-%     %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
-%     phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t_out(:,i),ch_types)';
-%     phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R,EX,EY,EZ,mags)';
-% end
+for i=(1:3)
+    q_t(i,:) = q(i)*sin(2*pi*(f_start*times - times.^2*rate_of_change/2));
+    dip_mom_t_out(i,:) = dip_mom_out(i)*sin(2*pi*(f_start_out*times - times.^2*rate_of_change_out/2))*1e9;
+end
+% 
+% %current dipole in, magnetic dipole out
+for i=(1:size(times,2))
+    %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
+    %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
+    phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t_out(:,i),ch_types)';
+    phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R,EX,EY,EZ,mags)';
+end
 %phi_0=phi_in+phi_out;
 %add gaussian noise at 10 percent of max value of phi_0
-% [mValue , vIndex] = max(max(phi_0));
-% rand = randn(size(phi_0,1),size(phi_0,2));
+noise = randn(size(phi_in,1),size(phi_in,2));
+% Create an amplitude for that noise that is 10% of the noise-free signal at every element.
+amplitude = 0.15 * phi_in;
+% Now add the noise-only signal to your original noise-free signal to create a noisy signal.
+phi_0 = phi_in + amplitude .* noise + phi_out;
 
 
 %% use FieldTrip leadfield
@@ -116,27 +119,31 @@ end
 % cfg.output    = 'brain';
 % segmentedmri  = ft_volumesegment(cfg, mri);
 % save segmentedmri segmentedmri
-seg = load("segmentedmri.mat");
-segmentedmri = seg.segmentedmri;
-cfg = [];
-cfg.method='singleshell';
-headmodel = ft_prepare_headmodel(cfg, segmentedmri);
-headmodel = ft_convert_units(headmodel, 'cm');
-dip_pos = [5,0,7]; %[Rx Ry Rz] (size Nx3)
-dip_mom = [1,1,0]; %(size 3xN
+% seg = load("segmentedmri.mat");
+% segmentedmri = seg.segmentedmri;
+% cfg = [];
+% cfg.method='singleshell';
+% headmodel = ft_prepare_headmodel(cfg, segmentedmri);
+% headmodel = ft_convert_units(headmodel, 'cm');
+% dip_pos = [5,0,7]; %[Rx Ry Rz] (size Nx3)
+% dip_mom = [1,1,0]; %(size 3xN
+% 
+% grad = ft_read_sens(rawfile, 'senstype', 'meg', 'coilaccuracy', 2); % with coilaccuracy being 0, 1 or 2.
+% 
+% cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
+% cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
+% cfg.sourcemodel.unit       = 'cm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
+% cfg.sourcemodel.inside = true(size(cfg.sourcemodel.pos,1),1);
+% cfg.unit='cm';
+% cfg.reducerank      = 2;
+% cfg.headmodel     = headmodel; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
+% cfg.grad          = grad; %structzure with gradiometer definition or filename, see FT_READ_SENS
+% sim_data = ft_prepare_leadfield(cfg);
+% lead_field = sim_data.leadfield{1, 1};
+% %multiply the ‘leadfield matrix’, consisting of N-source-component columns 
+% % with a matrix of N-source-component rows time courses of activation.
+% phi_0 = lead_field*dip_mom';
 
-grad = ft_read_sens(rawfile, 'senstype', 'meg', 'coilaccuracy', 1); % with coilaccuracy being 0, 1 or 2.
-
-cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
-cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
-cfg.sourcemodel.unit       = 'cm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
-cfg.sourcemodel.inside = true(size(cfg.sourcemodel.pos,1),1);
-cfg.unit='cm';
-cfg.reducerank      = 2;
-cfg.headmodel     = headmodel; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
-cfg.grad          = grad; %structzure with gradiometer definition or filename, see FT_READ_SENS
-sim_data = ft_prepare_leadfield(cfg);
-dipole_data = sim_data.leadfield{1, 1};
 
 %check geometry and dip pos
 % figure(7);
@@ -152,7 +159,6 @@ dipole_data = sim_data.leadfield{1, 1};
 % view(135, 20);
 % hold off
 
-return
 %% reconstrct internal data
 %%check mags vs grads
 j=1;
@@ -226,6 +232,7 @@ angle_mVSH_sVSH = subspace(phi_0(:,1),mVSH_sVSH)*180/pi;
 angle_oidin = subspace(phi_0(:,1),SNin_spm)*180/pi;
 angle_oid_oid = subspace(phi_0(:,1),oid_oid)*180/pi;
 angle_oid_sVSH = subspace(phi_0(:,1),oid_sVSH)*180/pi;
+
 
 %check data for signals with time 
 % check_data_vsh_vsh_mags = subspace(phi_mags, [SNin_mags SNout_mags])*180/pi;

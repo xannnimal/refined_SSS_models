@@ -142,7 +142,12 @@ for i=(1:size(times,2))
     phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t_out(:,i),ch_types)';
     phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R,EX,EY,EZ,mags)';
 end
-phi_0=phi_in; %+phi_out;
+%add gaussian noise at 10 percent of max value of phi_0
+noise = randn(size(phi_in,1),size(phi_in,2));
+% Create an amplitude for that noise that is 10% of the noise-free signal at every element.
+amplitude = 0.15 * phi_in;
+% Now add the noise-only signal to your original noise-free signal to create a noisy signal.
+phi_0 = phi_in + amplitude .* noise + phi_out;
 
 %% reconstruct data
 %single in, single out
@@ -200,3 +205,13 @@ check_data_oid_oid_dav = mean(check_data_oid_oid_d);
 check_data_oid_vsh_dmin = min(check_data_oid_vsh_d);
 check_data_oid_vsh_dmax = max(check_data_oid_vsh_d);
 check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
+
+figure(1)
+hold on
+plot(times,phi_0(1,:))
+plot(times,data_rec_vsh(1,:))
+plot(times,data_rec_multi_vsh(1,:))
+title('SQUID, Currrent Dipole [5cm,0,0], Magnetic Dipole [0,0,1.5m]')
+xlabel('Time (sec)')
+ylabel('Dipole Signal, Chan 1 (T)')
+legend({'Raw Data','VSH/VSH','Multi/VSH'},'location','northwest')
