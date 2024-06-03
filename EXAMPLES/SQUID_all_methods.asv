@@ -106,9 +106,9 @@ end
 %add gaussian noise at 10 percent of max value of phi_0
 noise = randn(size(phi_in,1),size(phi_in,2));
 % Create an amplitude for that noise that is 10% of the noise-free signal at every element.
-amplitude = 0.15 * phi_in;
+amplitude = 0.15 * phi_;
 % Now add the noise-only signal to your original noise-free signal to create a noisy signal.
-phi_0 = phi_in + amplitude .* noise + phi_out;
+phi_0 = phi_0 + amplitude .* noise;
 
 
 %% use FieldTrip leadfield
@@ -176,9 +176,6 @@ for i=(1:size(R,2))
         k=k+1;
     end
 end
-ni=10;
-data_rec_it = xi([SNin_tot,SNout],phi_0,Lin,Lout-1,ni);
-
 %only mags
 pS_mags=pinv([SNin_mags SNout_mags]);
 XN_mags=pS_mags*phi_mags;
@@ -236,7 +233,7 @@ angle_oidin = subspace(phi_0(:,1),SNin_spm)*180/pi;
 angle_oid_oid = subspace(phi_0(:,1),oid_oid)*180/pi;
 angle_oid_sVSH = subspace(phi_0(:,1),oid_sVSH)*180/pi;
 
-
+return
 %check data for signals with time 
 % check_data_vsh_vsh_mags = subspace(phi_mags, [SNin_mags SNout_mags])*180/pi;
 % check_data_vsh_vsh_grads = subspace(phi_grads, [SNin_grads SNout_grads])*180/pi;

@@ -36,8 +36,9 @@ phi_0= dipole_data.trial{1,1}(:,:);
 %   "nm" is the same as L_in
 %   "nt" equals Lout - 1
 %   "ni" equals number of iterations
-ni=5;
-data_rec = xi([SNin_tot,SNout],phi_0,Lin,Lout-1,ni);
+ni=10;
+XN_it = xi([SNin,SNout],phi_0,Lin,Lout-1,ni);
+data_rec_it = real(SNin*XN_it(1:size(SNin,2),:));
 
 %% plot data to check
 %plot data from single channel

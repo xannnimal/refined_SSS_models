@@ -40,8 +40,8 @@ for i=(1:306)
     end
 end
 %% adjust the height of sensors in top of head
-d=0.03;
-for i= (73:84) %(64:84)% (73:84)
+d=0.00;
+for i= (64:84) %(64:84)% (73:84)
     [azimuth,elevation,r] = cart2sph(R(1,i),R(2,i),R(3,i));
     r_new = r-d;
     [vs1,vs2,vs3] = sph2cart(azimuth,elevation,r_new);
@@ -49,14 +49,14 @@ for i= (73:84) %(64:84)% (73:84)
     R(2,i)= vs2;
     R(3,i)= vs3;
 end
-% for i= (112:114)% (73:84)
-%     [azimuth,elevation,r] = cart2sph(R(1,i),R(2,i),R(3,i));
-%     r_new = r-d;
-%     [vs1,vs2,vs3] = sph2cart(azimuth,elevation,r_new);
-%     R(1,i)= vs1;
-%     R(2,i)= vs2;
-%     R(3,i)= vs3;
-% end
+for i= (112:114)% (73:84)
+    [azimuth,elevation,r] = cart2sph(R(1,i),R(2,i),R(3,i));
+    r_new = r-d;
+    [vs1,vs2,vs3] = sph2cart(azimuth,elevation,r_new);
+    R(1,i)= vs1;
+    R(2,i)= vs2;
+    R(3,i)= vs3;
+end
 RT=R';
 
 r0=[0,0,0.07]; %5cm along z axis
@@ -75,10 +75,9 @@ r0=[0,0,0.07]; %5cm along z axis
 % % scatter3(RT(85:306,1),RT(85:306,2),RT(85:306,3),'r')
 % scatter3(RT(1:306,1),RT(1:306,2),RT(1:306,3),'r')
 % scatter3(r0(1),r0(2),r0(3),'b*')
-% %scatter3(RT(64:69,1),RT(64:69,2),RT(64:69,3),'g')
-% %scatter3(RT(70:72,1),RT(70:72,2),RT(70:72,3),'g')
+% scatter3(RT(64:84,1),RT(64:84,2),RT(64:84,3),'g')
 % scatter3(RT(73:84,1),RT(73:84,2),RT(73:84,3),'g')
-% %scatter3(RT(112:114,1),RT(112:114,2),RT(112:114,3),'g')
+% scatter3(RT(112:114,1),RT(112:114,2),RT(112:114,3),'g')
 % %scatter3(center1(1),center1(2),center1(3),'g*')
 % %scatter3(center2(1),center2(2),center2(3),'b*')
 % title('306 Neuromag Helmet, Current Dipole=[0,0,0.05m]')
@@ -86,6 +85,7 @@ r0=[0,0,0.07]; %5cm along z axis
 % ylabel('y axis (m)')
 % zlabel('z axis (m)')
 % hold off;
+
 
 %% SSS expansions- multi origin interior
 %spheroidal
@@ -147,7 +147,7 @@ noise = randn(size(phi_in,1),size(phi_in,2));
 % Create an amplitude for that noise that is 10% of the noise-free signal at every element.
 amplitude = 0.15 * phi_in;
 % Now add the noise-only signal to your original noise-free signal to create a noisy signal.
-phi_0 = phi_in + amplitude .* noise + phi_out;
+phi_0 = phi_in + phi_out + amplitude .* noise;
 
 %% reconstruct data
 %single in, single out
@@ -166,6 +166,16 @@ data_rec_sph_sph=real(SNin_spm*XN_sph_sph(1:size(SNin_spm,2),:));
 pS_sph_vsh=pinv([SNin_spm SNout]);   
 XN_sph_vsh=pS_sph_vsh*phi_0;
 data_rec_sph_vsh=real(SNin_spm*XN_sph_vsh(1:size(SNin_spm,2),:));
+
+%% iteratively reconstruct data
+%   "S" is the full normalized SSS basis, in and out
+%   "PHI" is the data (a vector or a matrix)
+%   "nm" is the same as L_in
+%   "nt" equals Lout - 1
+%   "ni" equals number of iterations
+ni=10;
+XN_it = xi([SNin_tot,SNout],phi_0,Lin,Lout-1,ni);
+data_rec_it = real(SNin_tot*XN_it(1:size(SNin_tot,2),:));
 
 %% check condition numbers
 cond_vsh_vsh=cond([SNin SNout]);
@@ -187,6 +197,7 @@ oid_sVSH=[SNin_spm,SNout];
 for i=(1:size(times,2))
     check_data_vsh_vsh_d(i) = subspace(phi_0(:,i), sVSH_sVSH)*180/pi;
     check_data_mvsh_vsh_d(i) = subspace(phi_0(:,i), mVSH_sVSH)*180/pi;
+    check_data_mvsh_vsh_it(i) = subspace(phi_0(:,i), data_rec_it)*180/pi;
     check_data_oid_oid_d(i) = subspace(phi_0(:,i), oid_oid)*180/pi;
     check_data_oid_vsh_d(i) = subspace(phi_0(:,i), oid_sVSH)*180/pi;
 end
@@ -197,6 +208,10 @@ check_data_vsh_vsh_dav = mean(check_data_vsh_vsh_d);
 check_data_mvsh_vsh_dmin = min(check_data_mvsh_vsh_d);
 check_data_mvsh_vsh_dmax = max(check_data_mvsh_vsh_d);
 check_data_mvsh_vsh_dav = mean(check_data_mvsh_vsh_d);
+
+check_data_mvsh_vsh_itmin = min(check_data_mvsh_vsh_it);
+check_data_mvsh_vsh_itmax = max(check_data_mvsh_vsh_it);
+check_data_mvsh_vsh_itav = mean(check_data_mvsh_vsh_it);
 
 check_data_oid_oid_dmin = min(check_data_oid_oid_d);
 check_data_oid_oid_dmax = max(check_data_oid_oid_d);
@@ -211,7 +226,8 @@ hold on
 plot(times,phi_0(1,:))
 plot(times,data_rec_vsh(1,:))
 plot(times,data_rec_multi_vsh(1,:))
+plot(times, data_rec_it(1,:))
 title('SQUID, Currrent Dipole [5cm,0,0], Magnetic Dipole [0,0,1.5m]')
 xlabel('Time (sec)')
 ylabel('Dipole Signal, Chan 1 (T)')
-legend({'Raw Data','VSH/VSH','Multi/VSH'},'location','northwest')
+legend({'Raw Data','VSH/VSH','Multi/VSH','iter Multi'},'location','northwest')
