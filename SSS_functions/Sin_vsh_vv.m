@@ -51,6 +51,13 @@ for ch = 1:nchan
       end
    end
 end
+for i=(1:size(Sin,1))
+    if mod(i,3)==0 %every third is a magnetometer
+        Sin(i,:)=Sin(i,:)*100;
+    else
+        Sin(i,:)=Sin(i,:);
+    end
+end
 for j = 1:size(Sin,2)
   SNin(:,j) = Sin(:,j)/norm(Sin(:,j));
 end

@@ -59,7 +59,7 @@ for i= (112:114)% (73:84)
 end
 RT=R';
 
-r0=[0,0,0.07]; %5cm along z axis
+r0=[0,0,0.06]; %5cm along z axis
 
 %% plot sensors
 % figure(1)
