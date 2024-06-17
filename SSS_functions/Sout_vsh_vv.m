@@ -52,7 +52,7 @@ for ch = 1:nchan
    end
 end
 for i=(1:size(Sout,1))
-    if mod(i,3)==0 %every third is a magnetometer
+    if ch_types(i)==1 %every third is a magnetometer
         Sout(i,:)=Sout(i,:)*100;
     else
         Sout(i,:)=Sout(i,:);

@@ -58,6 +58,7 @@ end
 [SNin_tot,~] = multiVSHin_singleVSHout(center1', center2',R,EX,EY,EZ,ch_types,Lin,Lout);
 %calculate single in/out
 [Sin,SNin] = Sin_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lin);
+%[Sin,SNin] = Sin_basic(rawfile,[0,0,0]',100,coordsys,Lin);
 [Sout,SNout] = Sout_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lout);
 
 
@@ -109,7 +110,13 @@ noise = randn(size(phi_in,1),size(phi_in,2));
 amplitude = 0.15 * phi_in;
 % Now add the noise-only signal to your original noise-free signal to create a noisy signal.
 phi_0 = phi_in + amplitude .* noise + phi_out;
-
+for i=(1:size(phi_0,1))
+    if mod(i,3)==0 %every third is a magnetometer
+        phi_0(i,:)=phi_0(i,:)*100;
+    else
+        phi_0(i,:)=phi_0(i,:);
+    end
+end
 
 %% use FieldTrip leadfield
 % mri = ft_read_mri('Subject01.mri');
@@ -271,14 +278,15 @@ check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
 % data_chan_num=dipole_data.trial{1,1}(chan_num,:); 
 
 % figure(2);
+chan_num =3;
 hold on;
-plot(times(:,1:250),phi_in(1,1:250))
-plot(times(:,1:250),phi_out(1,1:250))
-plot(times(:,1:250),phi_0(1,1:250))
+plot(times(:,1:250),phi_in(chan_num,1:250))
+plot(times(:,1:250),phi_out(chan_num,1:250))
+plot(times(:,1:250),phi_0(chan_num,1:250))
 %plot(times,data_rec_vsh_mags(1,:))
 %plot(times,data_rec_vsh_grads(1,:))
-plot(times(:,1:250),data_rec_vsh(1,1:250))
-plot(times(:,1:250),data_rec_multi_vsh(1,1:250))
+plot(times(:,1:250),data_rec_vsh(chan_num,1:250))
+plot(times(:,1:250),data_rec_multi_vsh(chan_num,1:250))
 %plot(times,data_rec_sph_sph(1,:))
 %plot(times,data_rec_sph_vsh(1,:))
 title('SQUID, Currrent Dipole [5cm,0,0], Magnetic Dipole [0,0,1.5m]')

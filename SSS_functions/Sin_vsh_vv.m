@@ -52,7 +52,7 @@ for ch = 1:nchan
    end
 end
 for i=(1:size(Sin,1))
-    if mod(i,3)==0 %every third is a magnetometer
+    if ch_types(i)==1
         Sin(i,:)=Sin(i,:)*100;
     else
         Sin(i,:)=Sin(i,:);
