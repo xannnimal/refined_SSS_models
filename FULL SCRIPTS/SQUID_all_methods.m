@@ -58,6 +58,7 @@ end
 [SNin_tot,~] = multiVSHin_singleVSHout(center1', center2',R,EX,EY,EZ,ch_types,Lin,Lout);
 %calculate single in/out
 [Sin,SNin] = Sin_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lin);
+%[Sin,SNin] = Sin_basic(rawfile,[0,0,0]',100,coordsys,Lin);
 [Sout,SNout] = Sout_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lout);
 
 
@@ -106,10 +107,16 @@ end
 %add gaussian noise at 10 percent of max value of phi_0
 noise = randn(size(phi_in,1),size(phi_in,2));
 % Create an amplitude for that noise that is 10% of the noise-free signal at every element.
-amplitude = 0.15 * phi_;
+amplitude = 0.15 * phi_in;
 % Now add the noise-only signal to your original noise-free signal to create a noisy signal.
-phi_0 = phi_0 + amplitude .* noise;
-
+phi_0 = phi_in + amplitude .* noise; % + phi_out;
+for i=(1:size(phi_0,1))
+    if mod(i,3)==0 %every third is a magnetometer
+        phi_0(i,:)=phi_0(i,:)*100;
+    else
+        phi_0(i,:)=phi_0(i,:);
+    end
+end
 
 %% use FieldTrip leadfield
 % mri = ft_read_mri('Subject01.mri');
@@ -176,6 +183,9 @@ for i=(1:size(R,2))
         k=k+1;
     end
 end
+ni=10;
+data_rec_it = xi([SNin_tot,SNout],phi_0,Lin,Lout-1,ni);
+
 %only mags
 pS_mags=pinv([SNin_mags SNout_mags]);
 XN_mags=pS_mags*phi_mags;
@@ -233,7 +243,7 @@ angle_oidin = subspace(phi_0(:,1),SNin_spm)*180/pi;
 angle_oid_oid = subspace(phi_0(:,1),oid_oid)*180/pi;
 angle_oid_sVSH = subspace(phi_0(:,1),oid_sVSH)*180/pi;
 
-return
+
 %check data for signals with time 
 % check_data_vsh_vsh_mags = subspace(phi_mags, [SNin_mags SNout_mags])*180/pi;
 % check_data_vsh_vsh_grads = subspace(phi_grads, [SNin_grads SNout_grads])*180/pi;
@@ -268,14 +278,15 @@ check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
 % data_chan_num=dipole_data.trial{1,1}(chan_num,:); 
 
 % figure(2);
+chan_num =3;
 hold on;
-plot(times(:,1:250),phi_in(1,1:250))
-plot(times(:,1:250),phi_out(1,1:250))
-plot(times(:,1:250),phi_0(1,1:250))
+%plot(times(:,1:250),phi_in(chan_num,1:250))
+%plot(times(:,1:250),phi_out(chan_num,1:250))
+plot(times(:,1:250),phi_0(chan_num,1:250))
 %plot(times,data_rec_vsh_mags(1,:))
 %plot(times,data_rec_vsh_grads(1,:))
-plot(times(:,1:250),data_rec_vsh(1,1:250))
-plot(times(:,1:250),data_rec_multi_vsh(1,1:250))
+plot(times(:,1:250),data_rec_vsh(chan_num,1:250))
+plot(times(:,1:250),data_rec_multi_vsh(chan_num,1:250))
 %plot(times,data_rec_sph_sph(1,:))
 %plot(times,data_rec_sph_vsh(1,:))
 title('SQUID, Currrent Dipole [5cm,0,0], Magnetic Dipole [0,0,1.5m]')
@@ -283,7 +294,7 @@ xlabel('Time (sec)')
 ylabel('Dipole Signal, Chan 1 (T)')
 %ylim([-8e-12 8e-12])
 %legend({'Dip In','VSH Mags','VSH Grads', 'VSH/VSH'},'location','northwest')
-legend({'Dip In,' 'Dip Out','Raw Data','VSH/VSH','Multi/VSH'},'location','northwest')
+legend({'Raw Data','VSH/VSH','Multi/VSH'},'location','northwest')
 %legend({'Raw Data','VSH/VSH'},'location','northwest')
 hold off
 

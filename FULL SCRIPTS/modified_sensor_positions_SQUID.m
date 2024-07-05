@@ -40,7 +40,7 @@ for i=(1:306)
     end
 end
 %% adjust the height of sensors in top of head
-d=0.00;
+d=0.03;
 for i= (64:84) %(64:84)% (73:84)
     [azimuth,elevation,r] = cart2sph(R(1,i),R(2,i),R(3,i));
     r_new = r-d;
@@ -59,7 +59,7 @@ for i= (112:114)% (73:84)
 end
 RT=R';
 
-r0=[0,0,0.06]; %5cm along z axis
+r0=[0,0,0.07]; %5cm along z axis
 
 %% plot sensors
 % figure(1)
@@ -148,6 +148,13 @@ noise = randn(size(phi_in,1),size(phi_in,2));
 amplitude = 0.15 * phi_in;
 % Now add the noise-only signal to your original noise-free signal to create a noisy signal.
 phi_0 = phi_in + phi_out + amplitude .* noise;
+for i=(1:size(phi_0,1))
+    if mod(i,3)==0 %every third is a magnetometer
+        phi_0(i,:)=phi_0(i,:)*100;
+    else
+        phi_0(i,:)=phi_0(i,:);
+    end
+end
 
 %% reconstruct data
 %single in, single out
