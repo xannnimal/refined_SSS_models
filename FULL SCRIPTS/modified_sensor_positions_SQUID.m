@@ -40,6 +40,9 @@ for i=(1:306)
     end
 end
 %% adjust the height of sensors in top of head
+%%% change to 0.04, 0.05, 0.06 to move dipole location
+r0=[0,0,0.04]; %5cm along z axis
+%%% change to d= 0.01, 0.02. 0.03 to adjust sensors
 d=0.03;
 for i= (64:84) %(64:84)% (73:84)
     [azimuth,elevation,r] = cart2sph(R(1,i),R(2,i),R(3,i));
@@ -58,8 +61,6 @@ for i= (112:114)% (73:84)
     R(3,i)= vs3;
 end
 RT=R';
-
-r0=[0,0,0.07]; %5cm along z axis
 
 %% plot sensors
 % figure(1)
@@ -144,10 +145,8 @@ for i=(1:size(times,2))
 end
 %add gaussian noise at 10 percent of max value of phi_0
 noise = randn(size(phi_in,1),size(phi_in,2));
-% Create an amplitude for that noise that is 10% of the noise-free signal at every element.
 amplitude = 0.15 * phi_in;
-% Now add the noise-only signal to your original noise-free signal to create a noisy signal.
-phi_0 = phi_in + phi_out + amplitude .* noise;
+phi_0 = phi_in + phi_out; % + amplitude .* noise;
 for i=(1:size(phi_0,1))
     if mod(i,3)==0 %every third is a magnetometer
         phi_0(i,:)=phi_0(i,:)*100;
@@ -166,13 +165,13 @@ pS_multi_vsh=pinv([SNin_tot SNout]);
 XN_multi_vsh=pS_multi_vsh*phi_0;
 data_rec_multi_vsh=real(SNin_tot*XN_multi_vsh(1:size(SNin_tot,2),:)); 
 %spheroidal in, spheroidal out
-pS_sph_sph=pinv([SNin_spm SNout_spm]);   
-XN_sph_sph=pS_sph_sph*phi_0;
-data_rec_sph_sph=real(SNin_spm*XN_sph_sph(1:size(SNin_spm,2),:)); 
-%spheroidal in, single vsh out
-pS_sph_vsh=pinv([SNin_spm SNout]);   
-XN_sph_vsh=pS_sph_vsh*phi_0;
-data_rec_sph_vsh=real(SNin_spm*XN_sph_vsh(1:size(SNin_spm,2),:));
+% pS_sph_sph=pinv([SNin_spm SNout_spm]);   
+% XN_sph_sph=pS_sph_sph*phi_0;
+% data_rec_sph_sph=real(SNin_spm*XN_sph_sph(1:size(SNin_spm,2),:)); 
+% %spheroidal in, single vsh out
+% pS_sph_vsh=pinv([SNin_spm SNout]);   
+% XN_sph_vsh=pS_sph_vsh*phi_0;
+% data_rec_sph_vsh=real(SNin_spm*XN_sph_vsh(1:size(SNin_spm,2),:));
 
 %% iteratively reconstruct data
 %   "S" is the full normalized SSS basis, in and out
@@ -190,23 +189,23 @@ cond_SNin=cond(SNin);
 cond_SNin_tot = cond(SNin_tot);
 cond_SNout= cond(SNout);
 condition_multi_vsh = cond([SNin_tot SNout]);
-cond_SNin_spm=cond(SNin_spm);
-cond_SNout_spm= cond(SNout_spm);
-condition_sph_sph = cond([SNin_spm SNout_spm]);
-condition_sph_vsh = cond([SNin_spm SNout]);
+% cond_SNin_spm=cond(SNin_spm);
+% cond_SNout_spm= cond(SNout_spm);
+% condition_sph_sph = cond([SNin_spm SNout_spm]);
+% condition_sph_vsh = cond([SNin_spm SNout]);
 
 %% subsapce angles
 sVSH_sVSH=[SNin SNout];
 mVSH_sVSH=[SNin_tot SNout];
-oid_oid=[SNin_spm,SNout_spm];
-oid_sVSH=[SNin_spm,SNout];
+% oid_oid=[SNin_spm,SNout_spm];
+% oid_sVSH=[SNin_spm,SNout];
 
 for i=(1:size(times,2))
     check_data_vsh_vsh_d(i) = subspace(phi_0(:,i), sVSH_sVSH)*180/pi;
     check_data_mvsh_vsh_d(i) = subspace(phi_0(:,i), mVSH_sVSH)*180/pi;
-    check_data_mvsh_vsh_it(i) = subspace(phi_0(:,i), data_rec_it)*180/pi;
-    check_data_oid_oid_d(i) = subspace(phi_0(:,i), oid_oid)*180/pi;
-    check_data_oid_vsh_d(i) = subspace(phi_0(:,i), oid_sVSH)*180/pi;
+    % check_data_mvsh_vsh_it(i) = subspace(phi_0(:,i), data_rec_it)*180/pi;
+    % check_data_oid_oid_d(i) = subspace(phi_0(:,i), oid_oid)*180/pi;
+    % check_data_oid_vsh_d(i) = subspace(phi_0(:,i), oid_sVSH)*180/pi;
 end
 check_data_vsh_vsh_dmin = min(check_data_vsh_vsh_d);
 check_data_vsh_vsh_dmax = max(check_data_vsh_vsh_d);
@@ -216,25 +215,25 @@ check_data_mvsh_vsh_dmin = min(check_data_mvsh_vsh_d);
 check_data_mvsh_vsh_dmax = max(check_data_mvsh_vsh_d);
 check_data_mvsh_vsh_dav = mean(check_data_mvsh_vsh_d);
 
-check_data_mvsh_vsh_itmin = min(check_data_mvsh_vsh_it);
-check_data_mvsh_vsh_itmax = max(check_data_mvsh_vsh_it);
-check_data_mvsh_vsh_itav = mean(check_data_mvsh_vsh_it);
+% check_data_mvsh_vsh_itmin = min(check_data_mvsh_vsh_it);
+% check_data_mvsh_vsh_itmax = max(check_data_mvsh_vsh_it);
+% check_data_mvsh_vsh_itav = mean(check_data_mvsh_vsh_it);
+% 
+% check_data_oid_oid_dmin = min(check_data_oid_oid_d);
+% check_data_oid_oid_dmax = max(check_data_oid_oid_d);
+% check_data_oid_oid_dav = mean(check_data_oid_oid_d);
+% 
+% check_data_oid_vsh_dmin = min(check_data_oid_vsh_d);
+% check_data_oid_vsh_dmax = max(check_data_oid_vsh_d);
+% check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
 
-check_data_oid_oid_dmin = min(check_data_oid_oid_d);
-check_data_oid_oid_dmax = max(check_data_oid_oid_d);
-check_data_oid_oid_dav = mean(check_data_oid_oid_d);
-
-check_data_oid_vsh_dmin = min(check_data_oid_vsh_d);
-check_data_oid_vsh_dmax = max(check_data_oid_vsh_d);
-check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
-
-figure(1)
-hold on
-plot(times,phi_0(1,:))
-plot(times,data_rec_vsh(1,:))
-plot(times,data_rec_multi_vsh(1,:))
-plot(times, data_rec_it(1,:))
-title('SQUID, Currrent Dipole [5cm,0,0], Magnetic Dipole [0,0,1.5m]')
-xlabel('Time (sec)')
-ylabel('Dipole Signal, Chan 1 (T)')
-legend({'Raw Data','VSH/VSH','Multi/VSH','iter Multi'},'location','northwest')
+% figure(1)
+% hold on
+% plot(times,phi_0(1,:))
+% plot(times,data_rec_vsh(1,:))
+% plot(times,data_rec_multi_vsh(1,:))
+% plot(times, data_rec_it(1,:))
+% title('SQUID, Currrent Dipole [5cm,0,0], Magnetic Dipole [0,0,1.5m]')
+% xlabel('Time (sec)')
+% ylabel('Dipole Signal, Chan 1 (T)')
+% legend({'Raw Data','VSH/VSH','Multi/VSH','iter Multi'},'location','northwest')

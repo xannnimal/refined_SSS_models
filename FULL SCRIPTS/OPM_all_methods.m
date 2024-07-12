@@ -77,12 +77,10 @@ for i=(1:size(times,2))
     phi_out(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e8;
     phi_inp(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',opm_matrix',R_hat',theta_hat',phi_hat',mags)';
 end
-phi_0p=phi_inp +phi_out;
-
-%field trip dipole sim
-%dipole_data_p = single_dipole_sim(opm_matrix,phi_hat,dip_pos,dip_mom);
-%pick a specific channel
-%phi_0p= dipole_data_p.trial{1,1}(:,:);
+noise = randn(size(phi_inp,1),size(phi_inp,2));
+amplitude = 0.15 * phi_inp;
+%%%% modify this line to do only internal, in+ext, or add noise %%%
+phi_0p = (phi_inp + phi_out + amplitude .* noise)*100; 
 
 %check dipole pos and sensor geometry
 % figure(6);
@@ -199,21 +197,11 @@ for i=(1:size(times,2))
     phi_outt(:,i) = magneticDipole(opm_matrix',R_hat',phi_hat',theta_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e9;
     phi_int(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',opm_matrix',R_hat',phi_hat',theta_hat',mags)';
 end
-phi_0t = phi_int+phi_outt;
+noise = randn(size(phi_int,1),size(phi_int,2));
+amplitude = 0.15 * phi_int;
+%%%% modify this line to do only internal, in+ext, or add noise %%%
+phi_0t = (phi_int + phi_outt + amplitude .* noise)*100;
 
-%old dipole code, broken
-%dipole_data_t = single_dipole_sim(opm_matrix,theta_hat,dip_pos,dip_mom);
-%pick a specific channel
-%phi_0t= dipole_data_t.trial{1,1}(:,:);
-%calculate B field
-%magneticField = magneticDipole(dip_pos,dip_mom);
-%phi_0t = magneticDipole(opm_matrix,theta_hat,phi_hat,dip_pos,dip_mom,ch_types);
-%simulate dipoles
-% for i=(1:size(times,2))
-%     phi_in_t(:,i) = magneticDipole_pointMags(opm_matrix',theta_hat',dip_pos', dip_mom_t(:,i))';
-%     phi_out_t(:,i) = magneticDipole_pointMags(opm_matrix',theta_hat',dip_pos_out', dip_mom_t_out(:,i))';
-% end
-% phi_0t=phi_in_t; %+ phi_out_t;
 
 %% reconstrct internal data
 %single in, single out
@@ -285,7 +273,6 @@ hold off
 % title('singlular values multi-VSH in/out')
 % legend({'theta','phi'},'location','northwest')
 % hold off
-
 % cond_SNin_tot_p_check = max(sig_p)/sig_p(81,1);
 % cond_SNin_tot_t_check = max(sig_t)/min(sig_t);
 
@@ -392,7 +379,10 @@ for i=(1:size(times,2))
     phi_outr(:,i) = magneticDipole(opm_matrix',theta_hat',phi_hat',R_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e9;
     phi_inr(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',opm_matrix',theta_hat',phi_hat',R_hat',mags)';
 end
-phi_0r = phi_inr+phi_outr;
+noise = randn(size(phi_inr,1),size(phi_inr,2));
+amplitude = 0.15 * phi_inr;
+%%%% modify this line to do only internal, in+ext, or add noise %%%
+phi_0r = (phi_inr + phi_outr + amplitude .* noise)*100;
 
 %% reconstrct internal data
 %single in, single out

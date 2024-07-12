@@ -106,10 +106,10 @@ end
 %phi_0=phi_in+phi_out;
 %add gaussian noise at 10 percent of max value of phi_0
 noise = randn(size(phi_in,1),size(phi_in,2));
-% Create an amplitude for that noise that is 10% of the noise-free signal at every element.
 amplitude = 0.15 * phi_in;
-% Now add the noise-only signal to your original noise-free signal to create a noisy signal.
-phi_0 = phi_in + amplitude .* noise; % + phi_out;
+%%%% modify this line to do only internal, in+ext, or add noise %%%
+phi_0 = phi_in + phi_out + amplitude .* noise; %
+%%%%
 for i=(1:size(phi_0,1))
     if mod(i,3)==0 %every third is a magnetometer
         phi_0(i,:)=phi_0(i,:)*100;
@@ -150,8 +150,6 @@ end
 % %multiply the ‘leadfield matrix’, consisting of N-source-component columns 
 % % with a matrix of N-source-component rows time courses of activation.
 % phi_0 = lead_field*dip_mom';
-
-
 %check geometry and dip pos
 % figure(7);
 % hold on
@@ -299,7 +297,6 @@ legend({'Raw Data','VSH/VSH','Multi/VSH'},'location','northwest')
 hold off
 
 
-return
 
 %% quantify differences between SSS methods using subspace angles
 %calculations independent of the type of raw data
