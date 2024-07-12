@@ -1,3 +1,54 @@
+%% use FieldTrip leadfield
+% mri = ft_read_mri('Subject01.mri');
+% mri.coordsys = 'ctf'; % just to be sure, it could be that this has been already added by the reading function
+% mri = ft_convert_coordsys(mri, 'neuromag');
+% cfg           = [];
+% cfg.output    = 'brain';
+% segmentedmri  = ft_volumesegment(cfg, mri);
+% save segmentedmri segmentedmri
+% seg = load("segmentedmri.mat");
+% segmentedmri = seg.segmentedmri;
+% cfg = [];
+% cfg.method='singleshell';
+% headmodel = ft_prepare_headmodel(cfg, segmentedmri);
+% headmodel = ft_convert_units(headmodel, 'cm');
+% dip_pos = [5,0,7]; %[Rx Ry Rz] (size Nx3)
+% dip_mom = [1,1,0]; %(size 3xN
+% 
+% grad = ft_read_sens(rawfile, 'senstype', 'meg', 'coilaccuracy', 2); % with coilaccuracy being 0, 1 or 2.
+% 
+% cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz] (size Nx3)
+% cfg.sourcemodel.mom        = dip_mom; %[Qx Qy Qz] (size 3xN)
+% cfg.sourcemodel.unit       = 'cm'; %string, can be 'mm', 'cm', 'm' (default is automatic)
+% cfg.sourcemodel.inside = true(size(cfg.sourcemodel.pos,1),1);
+% cfg.unit='cm';
+% cfg.reducerank      = 2;
+% cfg.headmodel     = headmodel; %structure with volume conduction model, see FT_PREPARE_HEADMODEL
+% cfg.grad          = grad; %structzure with gradiometer definition or filename, see FT_READ_SENS
+% sim_data = ft_prepare_leadfield(cfg);
+% lead_field = sim_data.leadfield{1, 1};
+% %multiply the ‘leadfield matrix’, consisting of N-source-component columns 
+% % with a matrix of N-source-component rows time courses of activation.
+% phi_0 = lead_field*dip_mom';
+%check geometry and dip pos
+% figure(7);
+% hold on
+% % scatter3(dip_pos(1),dip_pos(2),dip_pos(3), 'r*')
+% % scatter3(dip_pos_out(1),dip_pos_out(2),dip_pos_out(3), 'g*')
+% scatter3(R(1,:),R(2,:),R(3,:))
+% quiver3(R(1,:),R(2,:),R(3,:), EX(1,:), EX(2,:), EX(3,:))
+% %quiver3(R(1,:),R(2,:),R(3,:), EY(1,:), EY(2,:), EY(3,:))
+% title('SQUID- EX')
+% grid on
+% rotate3d
+% view(135, 20);
+% hold off
+
+
+
+
+
+
 %% generate SQUID magnetometers
 coordsys = 'device'; 
 rawfile = "sample_audvis_raw.fif";

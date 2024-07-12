@@ -292,26 +292,6 @@ oid_oid_p=[Sin_spm_p,Sout_spm_p];
 oid_sVSH_p=[Sin_spm_p,SNout_p];
 
 %% compare data reconstructions
-%for one time point
-% angles_mVSH_svd = subspace(phi_0p, SNin_tot_svd)*180/pi;
-% angles_mVSH_orth = subspace(phi_0p, SNin_tot_orth)*180/pi;
-% 
-% angles_SNin_t = subspace(phi_0t, SNin_t)*180/pi;
-% angles_SNin_tot_t= subspace(phi_0t, SNin_tot_t)*180/pi;
-% angles_vsh_vsh_t = subspace(phi_0t, sVSH_sVSH_t)*180/pi;
-% angles_mvsh_vsh_t = subspace(phi_0t, mVSH_sVSH_t)*180/pi;
-% angles_oid_oid_t = subspace(phi_0t, oid_oid_t)*180/pi;
-% angles_oid_vsh_t = subspace(phi_0t, oid_sVSH_t)*180/pi;
-% 
-% angles_SNin_p = subspace(phi_0p, SNin_p)*180/pi;
-% angles_SNin_tot_p= subspace(phi_0p, SNin_tot_p)*180/pi;
-% angles_vsh_vsh_p = subspace(phi_0p, sVSH_sVSH_p)*180/pi;
-% angles_mvsh_vsh_p = subspace(phi_0p, mVSH_sVSH_p)*180/pi;
-% angles_oid_oid_p = subspace(phi_0p, oid_oid_p)*180/pi;
-% angles_oid_vsh_p = subspace(phi_0p, oid_sVSH_p)*180/pi;
-
-
-%for data with more than 1 time point
 %phi direction
 for i=(1:size(times,2))
     check_data_vsh_vsh_p(i) = subspace(phi_0p(:,i), sVSH_sVSH_p)*180/pi;
