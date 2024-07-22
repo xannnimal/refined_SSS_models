@@ -37,6 +37,22 @@ for i=(1:306)
     end
 end
 
+%% check angles and plot sensor coil orientations
+figure(1)
+hold on;
+grid on;
+quiver3(R(1,:),R(2,:),R(3,:),EZ(1,:),EZ(2,:),EZ(3,:))
+%quiver3(R(1,:),R(2,:),R(3,:),EX(1,:),EX(2,:),EX(3,:))
+%quiver3(R(1,:),R(2,:),R(3,:),EY(1,:),EY(2,:),EY(3,:))
+scatter3(R(1,:),R(2,:),R(3,:),'r')
+%scatter3(0,0,0,'g*')
+title('SQUID')
+xlabel('x axis (m)')
+ylabel('y axis (m)')
+zlabel('z axis (m)')
+hold off;
+rotate3d
+view(135, 20);
 
 %% SSS expansions- multi origin interior
 %find semi major and minor

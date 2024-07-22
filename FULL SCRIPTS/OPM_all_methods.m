@@ -77,10 +77,11 @@ for i=(1:size(times,2))
     phi_out(:,i) = magneticDipole(opm_matrix',R_hat',theta_hat',phi_hat',dip_pos_out', dip_mom_t_out(:,i),ch_types)'*1e8;
     phi_inp(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',opm_matrix',R_hat',theta_hat',phi_hat',mags)';
 end
+rng(1,'twister')
 noise = randn(size(phi_inp,1),size(phi_inp,2));
 amplitude = 0.15 * phi_inp;
 %%%% modify this line to do only internal, in+ext, or add noise %%%
-phi_0p = (phi_inp + phi_out + amplitude .* noise)*100; 
+phi_0p = (phi_inp + phi_out+ amplitude .* noise)*100; % 
 
 %check dipole pos and sensor geometry
 % figure(6);
@@ -200,7 +201,7 @@ end
 noise = randn(size(phi_int,1),size(phi_int,2));
 amplitude = 0.15 * phi_int;
 %%%% modify this line to do only internal, in+ext, or add noise %%%
-phi_0t = (phi_int + phi_outt + amplitude .* noise)*100;
+phi_0t = (phi_int + phi_outt+ amplitude .* noise )*100; %
 
 
 %% reconstrct internal data
@@ -283,13 +284,13 @@ hold off
 %theta
 sVSH_sVSH_t=[SNin_t SNout_t];
 mVSH_sVSH_t=[SNin_tot_t SNout_t];
-oid_oid_t=[Sin_spm_t,Sout_spm_t];
-oid_sVSH_t=[Sin_spm_t,SNout_t];
+oid_oid_t=[SNin_spm_t,SNout_spm_t];
+oid_sVSH_t=[SNin_spm_t,SNout_t];
 %phi 
 sVSH_sVSH_p=[SNin_p SNout_p];
 mVSH_sVSH_p=[SNin_tot_p SNout_p];
-oid_oid_p=[Sin_spm_p,Sout_spm_p];
-oid_sVSH_p=[Sin_spm_p,SNout_p];
+oid_oid_p=[SNin_spm_p,SNout_spm_p];
+oid_sVSH_p=[SNin_spm_p,SNout_p];
 
 %% compare data reconstructions
 %phi direction
@@ -362,7 +363,7 @@ end
 noise = randn(size(phi_inr,1),size(phi_inr,2));
 amplitude = 0.15 * phi_inr;
 %%%% modify this line to do only internal, in+ext, or add noise %%%
-phi_0r = (phi_inr + phi_outr + amplitude .* noise)*100;
+phi_0r = (phi_inr + phi_outr + amplitude .* noise)*100; %
 
 %% reconstrct internal data
 %single in, single out
@@ -398,8 +399,8 @@ condition_sph_vsh_r = cond([SNin_spm_r SNout_r]);
 
 sVSH_sVSH_r=[SNin_r SNout_r];
 mVSH_sVSH_r=[SNin_tot_r SNout_r];
-oid_oid_r=[Sin_spm_r Sout_spm_r];
-oid_sVSH_r=[Sin_spm_r SNout_r];
+oid_oid_r=[SNin_spm_r SNout_spm_r];
+oid_sVSH_r=[SNin_spm_r SNout_r];
 
 for i=(1:size(times,2))
     check_data_vsh_vsh_r(i) = subspace(phi_0r(:,i), sVSH_sVSH_r)*180/pi;
