@@ -18,10 +18,13 @@ other_dir2 = phi_hat;
 other_dir1 = theta_hat;
 %find major and minor axis of spheroidal ellipse
 %Y must be the longest axis of opm_matrix
-[semi_major,semi_minor,origin]=find_ellipse_axis(opm_matrix);
+opm_mod(:,1)= opm_matrix(:,1);
+opm_mod(:,2)= opm_matrix(:,3);
+opm_mod(:,3)= opm_matrix(:,2);
+[semi_major,semi_minor,origin]=find_ellipse_axis(opm_mod);
 %calculate spheroidal in and single-vsh out
 %matrix,chan_ori,semi_major,semi_minor,Lin,Lout
-[Sin_spm,Sout_spm] = spheroidIN_spheroidOUT(opm_matrix,sensing_dir,origin,semi_major,semi_minor,Lin,Lout);
+[Sin_spm,Sout_spm] = spheroidIN_spheroidOUT(opm_mod,sensing_dir,origin,semi_major,semi_minor,Lin,Lout);
 for j = 1:size(Sin_spm,2)
   SNin_spm(:,j) = Sin_spm(:,j)/norm(Sin_spm(:,j));
 end
@@ -29,6 +32,27 @@ end
 for j = 1:size(Sout_spm,2)
   SNout_spm(:,j) = Sout_spm(:,j)/norm(Sout_spm(:,j));
 end
+
+%% check angles and plot sensor coil orientations
+figure(1)
+hold on;
+grid on;
+%quiver3(R(1,:),R(2,:),R(3,:),EZ(1,:),EZ(2,:),EZ(3,:))
+%quiver3(R(1,:),R(2,:),R(3,:),EX(1,:),EX(2,:),EX(3,:))
+%quiver3(R(1,:),R(2,:),R(3,:),EY(1,:),EY(2,:),EY(3,:))
+scatter3(opm_matrix(:,1),opm_matrix(:,2),opm_matrix(:,3),'r')
+%scatter3(opm_mod(:,1),opm_mod(:,2),opm_mod(:,3),'r')
+scatter3(origin(1),origin(2),origin(3),'g*')
+scatter3(semi_major,semi_major,semi_major,'g*')
+scatter3(semi_minor,semi_minor,semi_minor,'g*')
+title('OPM')
+xlabel('x axis (m)')
+ylabel('y axis (m)')
+zlabel('z axis (m)')
+hold off;
+rotate3d
+view(135, 20);
+return
 
 %% generate single dipole simulated data
 %current dipole using Samu's implementation of Sarvas
