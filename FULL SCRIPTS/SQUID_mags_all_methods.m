@@ -2,7 +2,7 @@
 clear
 %% constant variables 
 Lin = 8; % Truncation order of the internal VSH basis
-Lout = 3; % Truncation order of the external VSH basis
+Lout = 2; % Truncation order of the external VSH basis
 dim_in = (Lin+1)^2 - 1; % Dimension of the internal SSS basis, should be 80
 center1= [-0.00350699, 0.01138051, 0.05947857]; 
 center2= [-0.00433911, 0.04081329, 0.05194245]; 
@@ -51,13 +51,17 @@ end
 %find semi major and minor
 [semi_major,semi_minor,origin]=find_ellipse_axis(R_mags');
 [Sin_spm_p,Sout_spm_p] = spheroidIN_spheroidOUT(R_mags',EZ_mags',origin,semi_major,semi_minor,Lin,Lout);
+[harmonics_out] = spm_epharm(R_mags',EZ_mags',semi_major,semi_minor,Lout);
+[harmonics_in] = spm_ipharm(R_mags',EZ_mags',semi_major,semi_minor,Lin);
 
 for j = 1:size(Sin_spm_p,2)
   SNin_spm(:,j) = Sin_spm_p(:,j)/norm(Sin_spm_p(:,j));
+  harmonics_in(:,j) =harmonics_in(:,j)/norm(harmonics_in(:,j));
 end
 
 for j = 1:size(Sout_spm_p,2)
   SNout_spm(:,j) = Sout_spm_p(:,j)/norm(Sout_spm_p(:,j));
+  harmonics_out(:,j) =harmonics_out(:,j)/norm(harmonics_out(:,j));
 end
 
 % plot sensors
@@ -118,14 +122,19 @@ for i=(1:size(times,2))
     %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
     %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
     phi_out(:,i) = magneticDipole(R_mags,EX_mags,EY_mags,EZ_mags,dip_pos_out',dip_mom_t_out(:,i),ch_types)';
+    phi_out_point(:,i) = magneticDipole_pointMags(R_mags,EZ_mags,dip_pos_out', dip_mom_t_out(:,i))';
     phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R_mags,EX_mags,EY_mags,EZ_mags,mags)';
+    phi_in_point(:,i) = dipole_field_sarvas_pointmags(rs',q_t(:,i),r0',R_mags,EX_mags,EY_mags,EZ_mags)';
 end
 %phi_0=phi_in+phi_out;
 %add gaussian noise at 10 percent of max value of phi_0
 noise = randn(size(phi_in,1),size(phi_in,2));
 amplitude = 0.15 * phi_in;
 %%%% modify this line to do only internal, in+ext, or add noise %%%
-phi_0 = (phi_in + phi_out)*100; % + amplitude .* noise; %
+phi_in=phi_in*100;
+phi_out=phi_out*100;
+phi_0 = phi_in + phi_out; % + amplitude .* noise; %
+phi_point = phi_in_point*100+ phi_out_point*100;
 %%%%
 
 %% reconstrct internal data
@@ -170,9 +179,30 @@ oid_sVSH=[SNin_spm SNout];
 for i=(1:size(times,2))
     check_data_vsh_vsh_d(i) = subspace(phi_0(:,i), sVSH_sVSH)*180/pi;
     check_data_mvsh_vsh_d(i) = subspace(phi_0(:,i), mVSH_sVSH)*180/pi;
-    check_data_oid_oid_d(i) = subspace(phi_0(:,i), oid_oid)*180/pi;
+    check_data_oid_oid_d(i) = subspace(phi_point(:,i), oid_oid)*180/pi;
     check_data_oid_vsh_d(i) = subspace(phi_0(:,i), oid_sVSH)*180/pi;
+    %
+    check_data_vsh_out(i) = subspace(phi_out(:,i), SNout)*180/pi;
+    check_data_oid_out(i) = subspace(phi_out_point(:,i), harmonics_out)*180/pi;
+    check_data_vsh_in(i) = subspace(phi_in(:,i), SNin)*180/pi;
+    check_data_oid_in(i) = subspace(phi_in_point(:,i), harmonics_in)*180/pi;
 end
+check_data_vsh_in_min = min(check_data_vsh_in);
+check_data_vsh_in_max = max(check_data_vsh_in);
+check_data_vsh_in_av = mean(check_data_vsh_in);
+
+check_data_oid_in_min = min(check_data_oid_in);
+check_data_oid_in_max = max(check_data_oid_in);
+check_data_oid_in_av = mean(check_data_oid_in);
+
+check_data_vsh_out_min = min(check_data_vsh_out);
+check_data_vsh_out_max = max(check_data_vsh_out);
+check_data_vsh_out_av = mean(check_data_vsh_out);
+
+check_data_oid_out_min = min(check_data_oid_out);
+check_data_oid_out_max = max(check_data_oid_out);
+check_data_oid_out_av = mean(check_data_oid_out);
+
 check_data_vsh_vsh_dmin = min(check_data_vsh_vsh_d);
 check_data_vsh_vsh_dmax = max(check_data_vsh_vsh_d);
 check_data_vsh_vsh_dav = mean(check_data_vsh_vsh_d);

@@ -38,6 +38,10 @@ for i=(1:306)
 end
 
 %% calculate spheroidal basis
+[Sin,SNin] = Sin_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lin);
+[Sout,SNout] = Sout_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lout);
+
+[semi_major,semi_minor,origin]=find_ellipse_axis(R');
 [Sin_spm_p,Sout_spm_p] = spheroidIN_spheroidOUT(R',EZ',origin,semi_major,semi_minor,Lin,Lout);
 
 for j = 1:size(Sin_spm_p,2)
@@ -104,24 +108,7 @@ for i=(1:size(phi_0,1))
     end
 end
 
-%% reconstrct internal data
-%%check mags vs grads
-j=1;
-k=1;
-for i=(1:size(R,2))
-    if mod(i,3)==0 %every third is a magnetometer
-        SNin_mags(j,:)=SNin(i,:);
-        SNout_mags(j,:)=SNout(i,:);
-        phi_mags(j,:)=phi_0(i,:);
-        j=j+1;
-    else
-        SNin_grads(k,:)=SNin(i,:);
-        SNout_grads(k,:)=SNout(i,:);
-        phi_grads(k,:)=phi_0(i,:);
-        k=k+1;
-    end
-end
-
+%% reconstruct
 %spheroidal in, spheroidal out
 pS_sph_sph=pinv([SNin_spm SNout_spm]);   
 XN_sph_sph=pS_sph_sph*phi_0;
@@ -131,7 +118,8 @@ pS_sph_vsh=pinv([SNin_spm SNout]);
 XN_sph_vsh=pS_sph_vsh*phi_0;
 data_rec_sph_vsh=real(SNin_spm*XN_sph_vsh(1:size(SNin_spm,2),:));
 
-
+oid_oid=[SNin_spm SNout_spm];
+oid_sVSH=[SNin_spm SNout];
 condition_sph_sph = cond([SNin_spm SNout_spm]);
 for i=(1:size(times,2))
     check_data_oid_oid_d(i) = subspace(phi_0(:,i), oid_oid)*180/pi;
@@ -144,4 +132,4 @@ check_data_oid_oid_dav = mean(check_data_oid_oid_d);
 
 check_data_oid_vsh_dmin = min(check_data_oid_vsh_d);
 check_data_oid_vsh_dmax = max(check_data_oid_vsh_d);
-check_data_oid_vsh_dav = mean(check_data_oid_vsh_d)
+check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);

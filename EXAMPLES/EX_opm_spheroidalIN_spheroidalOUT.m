@@ -1,5 +1,5 @@
 %% EXAMPLE: OPM sensors, spheroid-in, spheroid-out
-
+clear
 %% constant variables regardless
 Lin = 8; % Truncation order of the internal VSH basis
 Lout = 3; % Truncation order of the external VSH basis
