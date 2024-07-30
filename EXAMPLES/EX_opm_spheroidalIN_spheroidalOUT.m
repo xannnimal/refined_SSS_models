@@ -52,7 +52,7 @@ zlabel('z axis (m)')
 hold off;
 rotate3d
 view(135, 20);
-return
+
 
 %% generate single dipole simulated data
 %current dipole using Samu's implementation of Sarvas

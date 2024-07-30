@@ -37,8 +37,21 @@ cfg.headmodel     = headmodel; %structure with volume conduction model, see FT_P
 cfg.grad          = grad; %structzure with gradiometer definition or filename, see FT_READ_SENS
 
 %generate simulated leadfield
-sim_data = ft_prepare_leadfield(cfg);
-dipole_data = sim_data.leadfield{1, 1};
+lf = ft_prepare_leadfield(cfg);
+lf_data = lf.leadfield{1, 1};
+
+%% code from ft_dipolesimulation that uses output of ft_prepare_leadfield
+% for i=1:Ndipoles
+%       dipsignal{iTr}(i,:) = cos(cfg.sourcemodel.frequency(i)*diptime{iTr}*2*pi + cfg.sourcemodel.phase(i)) * cfg.sourcemodel.amplitude(i);
+% end
+% for i = 1:3
+%     data.trial{trial} = data.trial{trial} + ...
+%     lf(:,i:3:end) * (repmat(dipmom{trial}(i:3:end),1,nsamples) .* dipsignal{trial});
+% end
+dip_mom = dip_mom';
+for i=1:3
+    sim_data = lf_data(:,i:3:end)*(repmat(dip_mom(i:3:end),1,1));
+end
 
 % I'm waiting to hear back from Jan to confirm this, but I think the output
 % "dipole_data" needs to be dotted into the sensing direction of each

@@ -1,4 +1,4 @@
-%% SQUID with all recons
+%% SQUID - only 102 magnetometers
 clear
 %% constant variables 
 Lin = 8; % Truncation order of the internal VSH basis
@@ -19,16 +19,22 @@ info = fiff_read_meas_info(rawfile);
 grad = ft_read_sens(rawfile, 'coordsys', 'dewar', 'senstype', 'meg', 'coilaccuracy', 2); % with coilaccuracy being 0, 1 or 2.
 EZ=grad.chanori';
 R=grad.chanpos';
-
-for i=(1:size(EZ,2))
+j=1;
+for i=(1:size(R,2))
     if mod(i,3)==0 %every third is a magnetometer
-        ch_types(i)=1;
-    else
-        ch_types(i)=0;
+        R_mags(:,j)=R(:,i);
+        EZ_mags(:,j)=EZ(:,i);
+        EX_mags(:,j)=EX(:,i);
+        EY_mags(:,j)=EY(:,i);
+        j=j+1;
     end
 end
+
+for i=(1:size(EZ_mags,2))
+    ch_types(i)=1;
+end
 k=1;
-for i=(1:306)
+for i=(1:ch_types)
     if ch_types(i)==1 %every third is a magnetometer
         mags(k)=i;
         k=k+1;
@@ -37,36 +43,14 @@ for i=(1:306)
     end
 end
 
-%% adjust the height of sensors in top of head
-%%% change to 0.04, 0.05, 0.06 to move dipole location
-r0=[0,0,0.04]; %5cm along z axis
-%%% change to d= 0.01, 0.02. 0.03 to adjust sensors
-d=0.03;
-for i= (64:84) %(64:84)% (73:84)
-    [azimuth,elevation,r] = cart2sph(R(1,i),R(2,i),R(3,i));
-    r_new = r-d;
-    [vs1,vs2,vs3] = sph2cart(azimuth,elevation,r_new);
-    R(1,i)= vs1;
-    R(2,i)= vs2;
-    R(3,i)= vs3;
-end
-for i= (112:114)% (73:84)
-    [azimuth,elevation,r] = cart2sph(R(1,i),R(2,i),R(3,i));
-    r_new = r-d;
-    [vs1,vs2,vs3] = sph2cart(azimuth,elevation,r_new);
-    R(1,i)= vs1;
-    R(2,i)= vs2;
-    R(3,i)= vs3;
-end
-RT=R';
-
+%% check angles and plot sensor coil orientations
 
 %% SSS expansions- multi origin interior
 %find semi major and minor
 %calculate spheroidal in/out
 %find semi major and minor
-[semi_major,semi_minor,origin]=find_ellipse_axis(R');
-[Sin_spm_p,Sout_spm_p] = spheroidIN_spheroidOUT(R',EZ',origin,semi_major,semi_minor,Lin,Lout);
+[semi_major,semi_minor,origin]=find_ellipse_axis(R_mags');
+[Sin_spm_p,Sout_spm_p] = spheroidIN_spheroidOUT(R_mags',EZ_mags',origin,semi_major,semi_minor,Lin,Lout);
 
 for j = 1:size(Sin_spm_p,2)
   SNin_spm(:,j) = Sin_spm_p(:,j)/norm(Sin_spm_p(:,j));
@@ -98,28 +82,18 @@ end
 
 %calculate multi-vsh in and single-vsh out
 %[SNin_tot,SNout] = multiVSHin_singleVSHout(center1, center2,opm_matrix,R_hat,other_dir,sensing_dir,ch_types,Lin,Lout)
-[SNin_tot,~] = multiVSHin_singleVSHout(center1', center2',R,EX,EY,EZ,ch_types,Lin,Lout);
+[SNin_tot,~] = multiVSHin_singleVSHout(center1', center2',R_mags,EX_mags,EY_mags,EZ_mags,ch_types,Lin,Lout);
 %calculate single in/out
-[Sin,SNin] = Sin_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lin);
+[Sin,SNin] = Sin_vsh_vv([0,0,0]',R_mags,EX_mags,EY_mags,EZ_mags,ch_types,Lin);
 %[Sin,SNin] = Sin_basic(rawfile,[0,0,0]',100,coordsys,Lin);
-[Sout,SNout] = Sout_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lout);
+[Sout,SNout] = Sout_vsh_vv([0,0,0]',R_mags,EX_mags,EY_mags,EZ_mags,ch_types,Lout);
 
 
 %% generate dependent dipoles
 %current dipole using Samu's implementation of Sarvas
-k=1;
-for i=(1:306)
-    if ch_types(i)==1 %every third is a magnetometer
-        mags(k)=i;
-        k=k+1;
-    else
-        k=k;
-    end
-end
 rs=[0,0,0];
 q=[0,1,0]; %y direction
 r0=[0.05,0,0]; %5cm along x axis
-%phi_0 = dipole_field_sarvas(rs',q',r0',R,EX,EY,EZ,mags)';
 
 %add time dependence to dipole moment
 dip_mom_out=[1,0,0];
@@ -143,54 +117,18 @@ end
 for i=(1:size(times,2))
     %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
     %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
-    phi_out(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos_out',dip_mom_t_out(:,i),ch_types)';
-    phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R,EX,EY,EZ,mags)';
+    phi_out(:,i) = magneticDipole(R_mags,EX_mags,EY_mags,EZ_mags,dip_pos_out',dip_mom_t_out(:,i),ch_types)';
+    phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R_mags,EX_mags,EY_mags,EZ_mags,mags)';
 end
 %phi_0=phi_in+phi_out;
 %add gaussian noise at 10 percent of max value of phi_0
 noise = randn(size(phi_in,1),size(phi_in,2));
 amplitude = 0.15 * phi_in;
 %%%% modify this line to do only internal, in+ext, or add noise %%%
-phi_0 = phi_in + phi_out; % + amplitude .* noise; %
+phi_0 = (phi_in + phi_out)*100; % + amplitude .* noise; %
 %%%%
-for i=(1:size(phi_0,1))
-    if mod(i,3)==0 %every third is a magnetometer
-        phi_0(i,:)=phi_0(i,:)*100;
-    else
-        phi_0(i,:)=phi_0(i,:);
-    end
-end
 
 %% reconstrct internal data
-%%check mags vs grads
-j=1;
-k=1;
-for i=(1:size(R,2))
-    if mod(i,3)==0 %every third is a magnetometer
-        SNin_mags(j,:)=SNin(i,:);
-        SNout_mags(j,:)=SNout(i,:);
-        phi_mags(j,:)=phi_0(i,:);
-        j=j+1;
-    else
-        SNin_grads(k,:)=SNin(i,:);
-        SNout_grads(k,:)=SNout(i,:);
-        phi_grads(k,:)=phi_0(i,:);
-        k=k+1;
-    end
-end
-ni=10;
-data_rec_it = xi([SNin_tot,SNout],phi_0,Lin,Lout-1,ni);
-
-%only mags
-pS_mags=pinv([SNin_mags SNout_mags]);
-XN_mags=pS_mags*phi_mags;
-data_rec_vsh_mags=real(SNin_mags*XN_mags(1:size(SNin_mags,2),:));
-
-%only grads
-pS_grads=pinv([SNin_grads SNout_grads]);
-XN_grads=pS_grads*phi_grads;
-data_rec_vsh_grads=real(SNin_grads*XN_grads(1:size(SNin_grads,2),:));
-
 %single in, single out
 pS=pinv([SNin SNout]);
 XN=pS*phi_0;
@@ -201,7 +139,7 @@ pS_multi_vsh=pinv([SNin_tot SNout]);
 XN_multi_vsh=pS_multi_vsh*phi_0;
 data_rec_multi_vsh=real(SNin_tot*XN_multi_vsh(1:size(SNin_tot,2),:)); 
 %spheroidal in, spheroidal out
-pS_sph_sph=pinv([SNin_spm SNout_spm]);   
+pS_sph_sph=pinv([SNin_spm SNout_spm]);   %]); %
 XN_sph_sph=pS_sph_sph*phi_0;
 data_rec_sph_sph=real(SNin_spm*XN_sph_sph(1:size(SNin_spm,2),:)); 
 %spheroidal in, single vsh out
@@ -225,19 +163,6 @@ sVSH_sVSH=[SNin SNout];
 mVSH_sVSH=[SNin_tot SNout];
 oid_oid=[SNin_spm SNout_spm];
 oid_sVSH=[SNin_spm SNout];
-
-%check subspace angles- for one time point
-% angle_sVSHin=subspace(phi_0(:,1),SNin)*180/pi;
-% angle_sVSH_sVSH=subspace(phi_0(:,1),[SNin SNout])*180/pi;
-% angle_sVSH_mags = subspace(phi_mags(:,1),SNin_mags)*180/pi;
-% angle_sVSH_grads = subspace(phi_grads(:,1),SNin_grads)*180/pi;
-% 
-% angle_mVSHin = subspace(phi_0(:,1),SNin_tot)*180/pi;
-% angle_mVSH_sVSH = subspace(phi_0(:,1),mVSH_sVSH)*180/pi;
-% angle_oidin = subspace(phi_0(:,1),SNin_spm)*180/pi;
-% angle_oid_oid = subspace(phi_0(:,1),oid_oid)*180/pi;
-% angle_oid_sVSH = subspace(phi_0(:,1),oid_sVSH)*180/pi;
-
 
 %check data for signals with time 
 % check_data_vsh_vsh_mags = subspace(phi_mags, [SNin_mags SNout_mags])*180/pi;
