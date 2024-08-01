@@ -34,8 +34,8 @@ end
 % Vm(2) = scale.*dY;
 % Vm(3) = scale.*(i.*m/sin(theta)).*Y;
 
-Vm(l^2:length(m)+l^2 - 1,1) = (scale.*(-(l+1)).*Y)';
-Vm(l^2:length(m)+l^2 - 1,2) = (scale.*dY)';
-Vm(l^2:length(m)+l^2 - 1,3) = (scale.*(i.*m/sin(theta)).*Y)';
+% Vm(l^2:length(m)+l^2 - 1,1) = (scale.*(-(l+1)).*Y)';
+% Vm(l^2:length(m)+l^2 - 1,2) = (scale.*dY)';
+% Vm(l^2:length(m)+l^2 - 1,3) = (scale.*(i.*m/sin(theta)).*Y)';
 
 

@@ -31,4 +31,3 @@ Vm(1) = scale*(-(l+1))*Y;
 Vm(2) = scale*dY;
 Vm(3) = scale*(i*m/sin(theta))*Y;
 
-
