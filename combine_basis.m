@@ -25,7 +25,7 @@ SNin_2_proj = P_orth*SNin_2;
 for j = 1:size(U,2) 
     kulma_u(j) = subspace(U(:,j),SNin_1);
 end
-inds = find(kulma_u*180/pi>40); %was 0.05 in radians, change to 40deg
+inds = find(kulma_u*180/pi>45); %was 0.05 in radians, change to 40deg
 %combined matrix
 SNin_tot = [SNin_1 U(:,inds)];
 end

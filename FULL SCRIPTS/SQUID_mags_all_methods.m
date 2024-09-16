@@ -84,20 +84,24 @@ end
 % rotate3d
 % view(135, 20);
 
+sensing_dir =  EX_mags;
+second =EY_mags;
+third =EZ_mags; 
+
 %calculate multi-vsh in and single-vsh out
 %[SNin_tot,SNout] = multiVSHin_singleVSHout(center1, center2,opm_matrix,R_hat,other_dir,sensing_dir,ch_types,Lin,Lout)
-[SNin_tot,~] = multiVSHin_singleVSHout(center1', center2',R_mags,EX_mags,EY_mags,EZ_mags,ch_types,Lin,Lout);
+[SNin_tot,~] = multiVSHin_singleVSHout(center1', center2',R_mags,third,second,sensing_dir,ch_types,Lin,Lout);
 %calculate single in/out
-[Sin,SNin] = Sin_vsh_vv([0,0,0]',R_mags,EX_mags,EY_mags,EZ_mags,ch_types,Lin);
+[Sin,SNin] = Sin_vsh_vv([0,0,0]',R_mags,third,second,sensing_dir,ch_types,Lin);
 %[Sin,SNin] = Sin_basic(rawfile,[0,0,0]',100,coordsys,Lin);
-[Sout,SNout] = Sout_vsh_vv([0,0,0]',R_mags,EX_mags,EY_mags,EZ_mags,ch_types,Lout);
+[Sout,SNout] = Sout_vsh_vv([0,0,0]',R_mags,third,second,sensing_dir,ch_types,Lout);
 
 
 %% generate dependent dipoles
 %current dipole using Samu's implementation of Sarvas
 rs=[0,0,0];
 q=[0,1,0]; %y direction
-r0=[0.05,0,0]; %5cm along x axis
+r0=[0,0,0.06]; %5cm along x axis
 
 %add time dependence to dipole moment
 dip_mom_out=[1,0,0];
@@ -121,10 +125,11 @@ end
 for i=(1:size(times,2))
     %phi_in_c(:,i) = current_dipole(R',EX',EY',EZ',dip_pos, dip_mom_t(:,i), ch_types)';
     %phi_in(:,i) = magneticDipole(R,EX,EY,EZ,dip_pos',dip_mom_t(:,i),ch_types)'; 
-    phi_out(:,i) = magneticDipole(R_mags,EX_mags,EY_mags,EZ_mags,dip_pos_out',dip_mom_t_out(:,i),ch_types)';
-    phi_out_point(:,i) = magneticDipole_pointMags(R_mags,EZ_mags,dip_pos_out', dip_mom_t_out(:,i))';
-    phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R_mags,EX_mags,EY_mags,EZ_mags,mags)';
-    phi_in_point(:,i) = dipole_field_sarvas_pointmags(rs',q_t(:,i),r0',R_mags,EX_mags,EY_mags,EZ_mags)';
+    phi_out(:,i) = magneticDipole(R_mags,third,second,sensing_dir,dip_pos_out',dip_mom_t_out(:,i),ch_types)';
+    phi_out_point(:,i) = magneticDipole_pointMags(R_mags,sensing_dir,dip_pos_out', dip_mom_t_out(:,i))';
+    phi_in(:,i) = dipole_field_sarvas(rs',q_t(:,i),r0',R_mags,third,second,sensing_dir,mags)';
+    phi_in_point(:,i) = dipole_field_sarvas_pointmags(rs',q_t(:,i),r0',R_mags,third,second,sensing_dir)';
+    phi_in_magdip(:,i) = magneticDipole(R_mags,third,second,sensing_dir,r0',q_t(:,i),ch_types)';
 end
 %phi_0=phi_in+phi_out;
 %add gaussian noise at 10 percent of max value of phi_0
@@ -167,6 +172,14 @@ cond_SNout_spm= cond(SNout_spm);
 condition_sph_sph = cond([SNin_spm SNout_spm]);
 condition_sph_vsh = cond([SNin_spm SNout]);
 
+%% correlation - Tim Tierney 
+% calculated the correlation (square root of variance explained) 
+% between the harmonic models and each and every lead field as a 
+% function of harmonic order (𝑙 = 1 to 11). We arbitrarily consider a minimum correlation of 
+% 0.95 across the whole brain as ‘sufficiently modelled’
+
+
+
 %% subsapce angles
 sVSH_sVSH=[SNin SNout];
 mVSH_sVSH=[SNin_tot SNout];
@@ -177,15 +190,15 @@ oid_sVSH=[SNin_spm SNout];
 % check_data_vsh_vsh_mags = subspace(phi_mags, [SNin_mags SNout_mags])*180/pi;
 % check_data_vsh_vsh_grads = subspace(phi_grads, [SNin_grads SNout_grads])*180/pi;
 for i=(1:size(times,2))
-    check_data_vsh_vsh_d(i) = subspace(phi_0(:,i), sVSH_sVSH)*180/pi;
-    check_data_mvsh_vsh_d(i) = subspace(phi_0(:,i), mVSH_sVSH)*180/pi;
+    check_data_vsh_vsh_d(i) = subspace(phi_point(:,i), sVSH_sVSH)*180/pi;
+    check_data_mvsh_vsh_d(i) = subspace(phi_point(:,i), mVSH_sVSH)*180/pi;
     check_data_oid_oid_d(i) = subspace(phi_point(:,i), oid_oid)*180/pi;
-    check_data_oid_vsh_d(i) = subspace(phi_0(:,i), oid_sVSH)*180/pi;
+    check_data_oid_vsh_d(i) = subspace(phi_point(:,i), oid_sVSH)*180/pi;
     %
     check_data_vsh_out(i) = subspace(phi_out(:,i), SNout)*180/pi;
-    check_data_oid_out(i) = subspace(phi_out_point(:,i), harmonics_out)*180/pi;
-    check_data_vsh_in(i) = subspace(phi_in(:,i), SNin)*180/pi;
-    check_data_oid_in(i) = subspace(phi_in_point(:,i), harmonics_in)*180/pi;
+    check_data_oid_out(i) = subspace(phi_out_point(:,i), SNout_spm)*180/pi;
+    check_data_vsh_in(i) = subspace(phi_in_magdip(:,i), SNin)*180/pi;
+    check_data_oid_in(i) = subspace(phi_in_magdip(:,i), SNin_spm)*180/pi;
 end
 check_data_vsh_in_min = min(check_data_vsh_in);
 check_data_vsh_in_max = max(check_data_vsh_in);
