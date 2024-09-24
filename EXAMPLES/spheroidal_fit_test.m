@@ -1,6 +1,8 @@
 %% testing spheroid fit
 % test spheroidal functions with a spherical sensor array
 % should get same results as with spherical SSS
+% DO GET SAME RESULTS 9/24/2024
+% ADDPATH gensph_equidist is in "invest multiorigin SSS -sensor array creation"
 clear
 
 %% generate spherical sensor array
@@ -161,27 +163,3 @@ check_data_oid_oid_dav = mean(check_data_oid_oid_d);
 check_data_oid_vsh_dmin = min(check_data_oid_vsh_d);
 check_data_oid_vsh_dmax = max(check_data_oid_vsh_d);
 check_data_oid_vsh_dav = mean(check_data_oid_vsh_d);
-
-return
-
-
-%% opm geometry 
-filename="headwithsensors1.mat";
-%generate helmet pos and ori with "gen_opm_geometry"
-[opm_matrix,EZ,EX,EY,ch_types] = gen_opm_geometry(filename);
-nchan = size(ch_types,1);
-
-%% SSS expansions- multi origin interior
-%speficy sensing direction
-sensing_dir=EZ;
-other_dir2 = EY;
-other_dir1 = EX;
-%find major and minor axis of spheroidal ellipse
-%Y must be the longest axis of opm_matrix, coords given have
-%helmet flipped upside down
-opm_mod(:,1)= opm_matrix(:,1);
-opm_mod(:,2)= opm_matrix(:,3);
-opm_mod(:,3)= opm_matrix(:,2);
-[semi_major,semi_minor,origin]=find_ellipse_axis(opm_mod);
-
-
