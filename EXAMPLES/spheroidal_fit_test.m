@@ -2,7 +2,7 @@
 % test spheroidal functions with a spherical sensor array
 % should get same results as with spherical SSS
 % DO GET SAME RESULTS 9/24/2024
-% ADDPATH gensph_equidist is in "invest multiorigin SSS -sensor array creation"
+% ADDPATH gensph_equidist is in "refined_SSS_testing- invest multiorigin SSS-sensor array creation"
 clear
 
 %% generate spherical sensor array

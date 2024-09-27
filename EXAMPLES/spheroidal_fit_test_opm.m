@@ -3,7 +3,8 @@
 % axis is the longest, so this code does that. Second, we need to substract
 % the origin of the optimized spheroid from the matrix geometry to center
 % it and pass the centered, optimized coordinated into the spheroidal basis
-% calculation functions
+% calculation functions (My function "SpheroidIN_spheroidOUT" does this
+% automatically)
 clear
 %% opm geometry 
 filename="headwithsensors1.mat";
@@ -23,10 +24,6 @@ opm_mod(:,1)= opm_matrix(:,1);
 opm_mod(:,2)= opm_matrix(:,3);
 opm_mod(:,3)= opm_matrix(:,2);
 [semi_major,semi_minor,origin]=find_ellipse_axis(opm_mod);
-
-
-
-
 
 %%%%%%%%%%%%%%%%%%%%
 function [a,b,o] = find_ellipse_axis(chanpos)
