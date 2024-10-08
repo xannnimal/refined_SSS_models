@@ -37,6 +37,7 @@ EZ=grad.chanori'; %for reference, these are the data structures used in the SSS 
 cfg.xgrid      = 'auto';   %vector (e.g. -20:1:20) or 'auto' (default = 'auto')
 cfg.ygrid      = 'auto';   %vector (e.g. -20:1:20) or 'auto' (default = 'auto')
 cfg.zgrid      = 'auto';     %vector (e.g.   0:1:20) or 'auto' (default = 'auto')
+cfg.singleshell.batchsize = 'all';
 %cfg.resolution = 1; %number (e.g. 1 cm) for automatic sourcemodel generation
 % or specify a few specific sources of interest
 % cfg.sourcemodel.pos        = dip_pos; %[Rx Ry Rz]
@@ -62,7 +63,7 @@ for i=1:size(leadfield.inside,1)
 end
 
 %reduce dimensions using SVD
-[source,S,V] = svd(sourcemodel,'econ');
+[Usource,S,V] = svd(sourcemodel,'econ');
 
 
 return

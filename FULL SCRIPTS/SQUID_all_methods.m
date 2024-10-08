@@ -4,12 +4,6 @@ clear
 Lin = 8; % Truncation order of the internal VSH basis
 Lout = 3; % Truncation order of the external VSH basis
 dim_in = (Lin+1)^2 - 1; % Dimension of the internal SSS basis, should be 80
-% center1= [-0.00350699, 0.01138051, 0.05947857]; 
-% center2= [-0.00433911, 0.04081329, 0.05194245]; 
-% %adjuct to device coordinate system
-% center1 = center1 - [0,0,0.05];
-% center2 = center2 - [0,0,0.05];
-
 
 %% generate SQUID magnetometers
 coordsys = 'device'; 
@@ -54,7 +48,7 @@ EZ = EZn.EZp;
 % [r0x,r0y,r0z]=sph2cart(0,0.3*pi,0.07);
 % r0=[r0x,r0y,r0z];
 %%% change to d= 0.01, 0.02. 0.03 to adjust sensors
-d=0.04;
+d=0.00;
 %%% change centers of muti-vsh
 % center1=[0,0,0];
 % [x,y,z]=sph2cart(0,0.3*pi,0.07);
@@ -92,6 +86,31 @@ EXT=EX';
 EYT=EY';
 EZT=EZ';
 
+%% plot sensors
+% figure(1)
+% grid on;
+% hold on;
+% rotate3d
+% view(135, 20);
+% %quiver3(RT(:,1),RT(:,2),RT(:,3),EZT(:,1),EZT(:,2),EZT(:,3))
+% %quiver3(RT(:,1),RT(:,2),RT(:,3),EYT(:,1),EYT(:,2),EYT(:,3))
+% %quiver3(RT(:,1),RT(:,2),RT(:,3),EXT(:,1),EXT(:,2),EXT(:,3))
+% % scatter3(RT(1:63,1),RT(1:63,2),RT(1:63,3),'r')
+% % scatter3(RT(68:72,1),RT(68:72,2),RT(68:72,3),'r')
+% % scatter3(RT(85:306,1),RT(85:306,2),RT(85:306,3),'r')
+% scatter3(RT(1:306,1),RT(1:306,2),RT(1:306,3),'r')
+% scatter3(r0(1),r0(2),r0(3),'k*')
+% scatter3(RT(64:84,1),RT(64:84,2),RT(64:84,3),'g')
+% scatter3(RT(73:84,1),RT(73:84,2),RT(73:84,3),'g')
+% scatter3(RT(112:114,1),RT(112:114,2),RT(112:114,3),'g')
+% %scatter3(center1(1),center1(2),center1(3),'b*')
+% %scatter3(center2(1),center2(2),center2(3),'b*')
+% title('Deviation -4cm z, Dipole 7cm from origin')
+% xlabel('x axis (m)')
+% ylabel('y axis (m)')
+% zlabel('z axis (m)')
+% hold off;
+
 %% SSS expansions- multi origin interior
 %find semi major and minor
 %calculate spheroidal in/out
@@ -107,38 +126,49 @@ for j = 1:size(Sout_spm_p,2)
   SNout_spm(:,j) = Sout_spm_p(:,j)/norm(Sout_spm_p(:,j));
 end
 
-%% plot sensors
-figure(1)
-grid on;
-hold on;
-rotate3d
-view(135, 20);
-%quiver3(RT(:,1),RT(:,2),RT(:,3),EZT(:,1),EZT(:,2),EZT(:,3))
-%quiver3(RT(:,1),RT(:,2),RT(:,3),EYT(:,1),EYT(:,2),EYT(:,3))
-%quiver3(RT(:,1),RT(:,2),RT(:,3),EXT(:,1),EXT(:,2),EXT(:,3))
-% scatter3(RT(1:63,1),RT(1:63,2),RT(1:63,3),'r')
-% scatter3(RT(68:72,1),RT(68:72,2),RT(68:72,3),'r')
-% scatter3(RT(85:306,1),RT(85:306,2),RT(85:306,3),'r')
-scatter3(RT(1:306,1),RT(1:306,2),RT(1:306,3),'r')
-scatter3(r0(1),r0(2),r0(3),'k*')
-scatter3(RT(64:84,1),RT(64:84,2),RT(64:84,3),'g')
-scatter3(RT(73:84,1),RT(73:84,2),RT(73:84,3),'g')
-scatter3(RT(112:114,1),RT(112:114,2),RT(112:114,3),'g')
-%scatter3(center1(1),center1(2),center1(3),'b*')
-%scatter3(center2(1),center2(2),center2(3),'b*')
-title('Deviation -4cm z, Dipole 7cm from origin')
-xlabel('x axis (m)')
-ylabel('y axis (m)')
-zlabel('z axis (m)')
-hold off;
-
 
 %calculate multi-vsh in and single-vsh out
-%[SNin_tot,SNout] = multiVSHin_singleVSHout(center1, center2,opm_matrix,R_hat,other_dir,sensing_dir,ch_types,Lin,Lout)
-%[SNin_tot,~] = multiVSHin_singleVSHout(center1', center2',R,EX,EY,EZ,ch_types,Lin,Lout);
+center1= [-0.00350699, 0.01138051, 0.05947857]; 
+center2= [-0.00433911, 0.04081329, 0.05194245]; 
+%adjuct to device coordinate system
+center1 = center1 - [0,0,0.05];
+center2 = center2 - [0,0,0.05];
+%[SNin_tot,SNout] = multiVSHin_singleVSHout(center1, center2,opm_matrix,R_hat,other_dir,sensing_dir,ch_types,Lin,Lout);
+[SNin_tot,~] = multiVSHin_singleVSHout(center1', center2',R,EX,EY,EZ,ch_types,Lin,Lout);
+
 [Sin1,SNin1] = Sin_vsh_vv(center1',R,EX,EY,EZ,ch_types,Lin);
-[Sin2,SNin2] = Sin_vsh_vv(center2',R,EX,EY,EZ,ch_types,1); %only include l=1
-SNin_tot = orth([SNin1 SNin2]);
+[Sin2,SNin2] = Sin_vsh_vv(center2',R,EX,EY,EZ,ch_types,Lin); %only include l=1
+% SNin_tot = orth([SNin1 SNin2]);
+
+%check how close this is to simply performing
+% SVD as [S_1,in S_2,in]  = U*Sigma*V^T
+%constructing the combined basis from the left singular vectors in U
+%as a function of the number of included  u vectors
+[U,sigma,Vt] = svd([SNin1 SNin2]);
+for i=1:size(SNin2,2)
+    check_dif(i) = subspace(U(:,1:120),SNin2(:,i))*180/pi;
+    num(i)=i;
+end
+
+sig_num = diag(sigma);
+ratio = sig_num(120)/sig_num(1); %0.27 percent, could use a threshold of 0.05%
+
+%when we get past 80, U vectos not contained in SNin_tot so subspace jumps
+%method for calculating the combined basis is good, matches the SVD
+%construct basis from 120 first U vectors - need to motivate some threshold
+
+figure(10)
+hold on
+plot(num,check_dif)
+xlabel('index of SNin2 vector')
+ylabel('Subspace angle (degrees)')
+title('Between SNin2 vectors and all of U(:,1:120)')
+hold off
+
+
+
+return
+
 
 %calculate single in/out
 [Sin,SNin] = Sin_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lin);
