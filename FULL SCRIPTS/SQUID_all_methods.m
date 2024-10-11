@@ -15,31 +15,31 @@ info = fiff_read_meas_info(rawfile);
 % R=grad.chanpos';
 
 %%% mags only
-for i=(1:306)
-    ch_types(i)=1;
-    mags(i)=i;
-end
+% for i=(1:306)
+%     ch_types(i)=1;
+%     mags(i)=i;
+% end
 
 EZn = load('normal_vectors.mat');
 EZ = EZn.EZp;
 
-%%% uncomment for mags/grads
-% for i=(1:size(EZ,2))
-%     if mod(i,3)==0 %every third is a magnetometer
-%         ch_types(i)=1;
-%     else
-%         ch_types(i)=0;
-%     end
-% end
-% k=1;
-% for i=(1:306)
-%     if ch_types(i)==1 %every third is a magnetometer
-%         mags(k)=i;
-%         k=k+1;
-%     else
-%         k=k;
-%     end
-% end
+%% uncomment for mags/grads
+for i=(1:size(EZ,2))
+    if mod(i,3)==0 %every third is a magnetometer
+        ch_types(i)=1;
+    else
+        ch_types(i)=0;
+    end
+end
+k=1;
+for i=(1:306)
+    if ch_types(i)==1 %every third is a magnetometer
+        mags(k)=i;
+        k=k+1;
+    else
+        k=k;
+    end
+end
 
 %% adjust the height of sensors in top of head
 %%% change to move the center of the dipole from 1-7cm away from origin in
@@ -48,39 +48,34 @@ EZ = EZn.EZp;
 % [r0x,r0y,r0z]=sph2cart(0,0.3*pi,0.07);
 % r0=[r0x,r0y,r0z];
 %%% change to d= 0.01, 0.02. 0.03 to adjust sensors
-d=0.00;
-%%% change centers of muti-vsh
-% center1=[0,0,0];
-% [x,y,z]=sph2cart(0,0.3*pi,0.07);
-% center2=[x,y,z];
-
+%d=0.00;
 %%% from samu
-center1=[0,0,0];
-x = 0.07*cos(0.9*pi/2);
-z = 0.07*sin(0.9*pi/2);
-center2 = [x,0,z];
-
-r2 = 0.04;
-x2 = r2*cos(0.9*pi/2);
-z2 = r2*sin(0.9*pi/2);
-r0 = [x2,0,z2];
-
-for i= (64:84) %(64:84)% (73:84)
-    [azimuth,elevation,r] = cart2sph(R(1,i),R(2,i),R(3,i));
-    r_new = r-d;
-    [vs1,vs2,vs3] = sph2cart(azimuth,elevation,r_new);
-    R(1,i)= vs1;
-    R(2,i)= vs2;
-    R(3,i)= vs3;
-end
-for i= (112:114)% (73:84)
-    [azimuth,elevation,r] = cart2sph(R(1,i),R(2,i),R(3,i));
-    r_new = r-d;
-    [vs1,vs2,vs3] = sph2cart(azimuth,elevation,r_new);
-    R(1,i)= vs1;
-    R(2,i)= vs2;
-    R(3,i)= vs3;
-end
+% center1=[0,0,0];
+% x = 0.07*cos(0.9*pi/2);
+% z = 0.07*sin(0.9*pi/2);
+% center2 = [x,0,z];
+% 
+% r2 = 0.04;
+% x2 = r2*cos(0.9*pi/2);
+% z2 = r2*sin(0.9*pi/2);
+% r0 = [x2,0,z2];
+% 
+% for i= (64:84) %(64:84)% (73:84)
+%     [azimuth,elevation,r] = cart2sph(R(1,i),R(2,i),R(3,i));
+%     r_new = r-d;
+%     [vs1,vs2,vs3] = sph2cart(azimuth,elevation,r_new);
+%     R(1,i)= vs1;
+%     R(2,i)= vs2;
+%     R(3,i)= vs3;
+% end
+% for i= (112:114)% (73:84)
+%     [azimuth,elevation,r] = cart2sph(R(1,i),R(2,i),R(3,i));
+%     r_new = r-d;
+%     [vs1,vs2,vs3] = sph2cart(azimuth,elevation,r_new);
+%     R(1,i)= vs1;
+%     R(2,i)= vs2;
+%     R(3,i)= vs3;
+% end
 RT=R';
 EXT=EX';
 EYT=EY';
@@ -151,7 +146,7 @@ for i=1:size(SNin2,2)
 end
 
 sig_num = diag(sigma);
-ratio = sig_num(120)/sig_num(1); %0.27 percent, could use a threshold of 0.05%
+ratio = sig_num(121)/sig_num(1); %0.27 percent, could use a threshold of 0.05%
 
 %when we get past 80, U vectos not contained in SNin_tot so subspace jumps
 %method for calculating the combined basis is good, matches the SVD
@@ -166,10 +161,6 @@ title('Between SNin2 vectors and all of U(:,1:120)')
 hold off
 
 
-
-return
-
-
 %calculate single in/out
 [Sin,SNin] = Sin_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lin);
 [Sout,SNout] = Sout_vsh_vv([0,0,0]',R,EX,EY,EZ,ch_types,Lout);
@@ -180,7 +171,7 @@ return
 %current dipole using Samu's implementation of Sarvas
 rs=[0,0,0];
 q=[0,1,0]; %y direction
-%r0=[0.05,0,0]; %5cm along x axis
+r0=[0.05,0,0]; %5cm along x axis
 %phi_0 = dipole_field_sarvas(rs',q',r0',R,EX,EY,EZ,mags)';
 
 %add time dependence to dipole moment
@@ -213,7 +204,7 @@ end
 noise = randn(size(phi_in,1),size(phi_in,2));
 amplitude = 0.15 * phi_in;
 %%%% modify this line to do only internal, in+ext, or add noise %%%
-phi_0 = phi_in + phi_out; % + amplitude .* noise; %
+phi_0 = phi_in; % + phi_out; % + amplitude .* noise; %
 %%%%
 % for i=(1:size(phi_0,1))
 %     if mod(i,3)==0 %every third is a magnetometer
